@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(PathRequest.toH2Console()).permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().permitAll())
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.sameOrigin()));
@@ -64,6 +65,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // .requestMatchers("/api/public/**", "/auth/**").permitAll() // 인증 불필요 경로
                         // .requestMatchers("/api/admin/**").hasRole("ADMIN") // 관리자 권한 필요 경로
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() // Swagger UI 경로 허용
                         .anyRequest().authenticated())
                 // .requiresChannel(channel -> channel // HTTPS 강제 (프로덕션 환경에서 SSL 설정 후 활성화)
                 // .anyRequest().requiresSecure()
