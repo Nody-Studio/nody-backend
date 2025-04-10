@@ -1,6 +1,7 @@
 package org.nodystudio.nodybackend.domain.user;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.nodystudio.nodybackend.domain.BaseTimeEntity;
@@ -30,6 +31,7 @@ public class User extends BaseTimeEntity {
   private String socialId;
 
   @Column(name = "email", length = 255)
+  @Email(message = "유효한 이메일 형식이 아닙니다.")
   private String email;
 
   @Column(name = "nickname", nullable = false, length = 50)
