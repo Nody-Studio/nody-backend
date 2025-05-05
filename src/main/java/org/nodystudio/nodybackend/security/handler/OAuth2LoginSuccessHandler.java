@@ -156,6 +156,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
   }
 
   private List<String> getAllowedDomainsList() {
+    if (allowedDomains == null || allowedDomains.isBlank()) {
+      log.warn("oauth2.redirect.allowed-domains 설정이 비어 있습니다. 모든 도메인을 차단합니다.");
+      return List.of();
+    }
     return Arrays.asList(allowedDomains.split(","));
   }
 
@@ -179,7 +183,15 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       String redirectFullHost = host + (port != -1 ? ":" + port : "");
 
       for (String allowedDomain : getAllowedDomainsList()) {
-        if (domainMatches(redirectFullHost, host, allowedDomain)) {
+        String trimmedAllowedDomain = allowedDomain.trim();
+
+        boolean allowSubdomains = trimmedAllowedDomain.startsWith("*.");
+        if (allowSubdomains) {
+          trimmedAllowedDomain = trimmedAllowedDomain.substring(2);
+          if (host.equals(trimmedAllowedDomain) || host.endsWith("." + trimmedAllowedDomain)) {
+            return true;
+          }
+        } else if (domainMatches(redirectFullHost, host, trimmedAllowedDomain)) {
           return true;
         }
       }
