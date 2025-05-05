@@ -24,7 +24,7 @@ public class TokenProvider {
   private static final String CLAIM_EMAIL = "email";
   private static final String CLAIM_PROVIDER = "provider";
 
-  private static final int MINIMUM_KEY_LENGTH_BYTES = 32;
+  private static final int MINIMUM_KEY_LENGTH_BYTES = 64;
 
   private final SecretKey secretKey;
   private final long accessTokenExpirationMillis;
@@ -38,7 +38,7 @@ public class TokenProvider {
 
     if (keyBytes.length < MINIMUM_KEY_LENGTH_BYTES) {
       String errorMsg = String.format(
-          "보안 키 길이가 부족합니다. 현재 길이: %d 바이트, 필요한 최소 길이: %d 바이트 (256 비트)",
+          "보안 키 길이가 부족합니다. 현재 길이: %d 바이트, 필요한 최소 길이: %d 바이트 (512 비트)",
           keyBytes.length, MINIMUM_KEY_LENGTH_BYTES);
       log.error(errorMsg);
       throw new IllegalArgumentException(errorMsg);
