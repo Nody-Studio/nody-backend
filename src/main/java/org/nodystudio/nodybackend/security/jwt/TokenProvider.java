@@ -43,7 +43,7 @@ public class TokenProvider {
       log.error(errorMsg);
       throw new IllegalArgumentException(errorMsg);
     }
-    
+
     this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     this.accessTokenExpirationMillis = accessTokenExpirationMinutes * 60 * 1000;
     this.refreshTokenExpirationMillis = refreshTokenExpirationDays * 24 * 60 * 60 * 1000;
@@ -63,7 +63,7 @@ public class TokenProvider {
       Instant expirationInstant = now.plusMillis(accessTokenExpirationMillis);
       Date expirationDate = Date.from(expirationInstant);
 
-      String token = Jwts.builder()
+      return Jwts.builder()
           .subject(user.getSocialId())
           .claim(CLAIM_USER_ID, user.getId())
           .claim(CLAIM_EMAIL, user.getEmail())
@@ -72,11 +72,9 @@ public class TokenProvider {
           .expiration(expirationDate)
           .signWith(secretKey, Jwts.SIG.HS512)
           .compact();
-      log.debug("Successfully created access token. Is token null? {}", token == null);
-      return token;
     } catch (Exception e) {
       log.error("Error creating access token for user ID: {}", user.getId(), e);
-      return null;
+      throw new RuntimeException("Error creating access token.");
     }
   }
 
@@ -87,20 +85,25 @@ public class TokenProvider {
    * @return 생성된 Refresh Token
    */
   public String createRefreshToken(User user) {
-    Instant now = Instant.now();
-    Instant expirationInstant = now.plusMillis(refreshTokenExpirationMillis);
-    Date expirationDate = Date.from(expirationInstant);
+    try {
+      Instant now = Instant.now();
+      Instant expirationInstant = now.plusMillis(refreshTokenExpirationMillis);
+      Date expirationDate = Date.from(expirationInstant);
 
-    String jti = UUID.randomUUID().toString();
+      String jti = UUID.randomUUID().toString();
 
-    return Jwts.builder()
-        .subject(user.getSocialId())
-        .claim(CLAIM_USER_ID, user.getId())
-        .id(jti)
-        .issuedAt(Date.from(now))
-        .expiration(expirationDate)
-        .signWith(secretKey, Jwts.SIG.HS512)
-        .compact();
+      return Jwts.builder()
+          .subject(user.getSocialId())
+          .claim(CLAIM_USER_ID, user.getId())
+          .id(jti)
+          .issuedAt(Date.from(now))
+          .expiration(expirationDate)
+          .signWith(secretKey, Jwts.SIG.HS512)
+          .compact();
+    } catch (Exception e) {
+      log.error("Error creating access token for user ID: {}", user.getId(), e);
+      throw new RuntimeException("Error creating access token.");
+    }
   }
 
   /**
