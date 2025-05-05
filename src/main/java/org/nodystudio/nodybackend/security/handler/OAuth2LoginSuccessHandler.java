@@ -46,38 +46,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
   @Value("${oauth2.redirect.allowed-domains}")
   private String allowedDomains;
 
-  private List<String> getAllowedDomainsList() {
-    return Arrays.asList(allowedDomains.split(","));
-  }
-
-  /**
-   * 리다이렉트 URL이 허용된 도메인인지 검증
-   *
-   * @param url 검증할 URL
-   * @return 허용된 도메인이면 true, 아니면 false
-   */
-  private boolean isValidRedirectUrl(String url) {
-    try {
-      URI redirectUri = new URI(url);
-      String redirectHost = redirectUri.getScheme() + "://" + redirectUri.getHost();
-      if (redirectUri.getPort() != -1) {
-        redirectHost += ":" + redirectUri.getPort();
-      }
-
-      for (String allowedDomain : getAllowedDomainsList()) {
-        if (redirectHost.equals(allowedDomain.trim())) {
-          return true;
-        }
-      }
-
-      log.warn("Invalid redirect URL detected: {}", url);
-      return false;
-    } catch (URISyntaxException e) {
-      log.error("Invalid redirect URL format: {}", url, e);
-      return false;
-    }
-  }
-
   /**
    * OAuth2 로그인 성공 시 호출되는 메서드
    *
@@ -143,8 +111,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       refreshTokenCookie.setSecure(true);
       refreshTokenCookie.setPath("/");
       Duration duration = Duration.between(LocalDateTime.now(), refreshTokenExpiry);
-      long refreshTokenMaxAgeSeconds = duration.getSeconds();
-      refreshTokenCookie.setMaxAge((int) refreshTokenMaxAgeSeconds);
+      long refreshTokenMaxAgeSeconds = Math.max(0, duration.getSeconds());
+      refreshTokenCookie.setMaxAge((int) Math.min(refreshTokenMaxAgeSeconds, Integer.MAX_VALUE));
       response.addCookie(refreshTokenCookie);
       log.debug("Refresh token cookie set (HttpOnly). Max-Age: {} seconds",
           refreshTokenMaxAgeSeconds);
@@ -184,6 +152,67 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
           .encode(StandardCharsets.UTF_8)
           .toUriString();
       getRedirectStrategy().sendRedirect(request, response, errorRedirectUrl);
+    }
+  }
+
+  private List<String> getAllowedDomainsList() {
+    return Arrays.asList(allowedDomains.split(","));
+  }
+
+  /**
+   * 리다이렉트 URL이 허용된 도메인인지 검증 도메인 경로('/path')가 포함된 URL도 허용하고, 서브도메인은 보호합니다. 프로토콜(http/https)은 비교에서
+   * 제외하여 환경 전환 시에도 인증이 유지됩니다.
+   *
+   * @param url 검증할 URL
+   * @return 허용된 도메인이면 true, 아니면 false
+   */
+  private boolean isValidRedirectUrl(String url) {
+    try {
+      URI redirectUri = new URI(url);
+      String host = redirectUri.getHost();
+      if (host == null) {
+        log.warn("Invalid redirect URL detected (no host): {}", url);
+        return false;
+      }
+      int port = redirectUri.getPort();
+
+      String redirectFullHost = host + (port != -1 ? ":" + port : "");
+
+      for (String allowedDomain : getAllowedDomainsList()) {
+        if (domainMatches(redirectFullHost, host, allowedDomain)) {
+          return true;
+        }
+      }
+
+      log.warn("Invalid redirect URL detected (domain not allowed): {}", url);
+      return false;
+    } catch (URISyntaxException e) {
+      log.error("Invalid redirect URL format: {}", url, e);
+      return false;
+    }
+  }
+
+  /**
+   * 리다이렉트 URL 부분이 단일 허용 도메인 패턴과 일치하는지 확인합니다.
+   *
+   * @param redirectFullHost 리다이렉트 URL의 호스트:포트 또는 호스트 부분.
+   * @param redirectHostOnly 리다이렉트 URL의 호스트 부분.
+   * @param rawAllowedDomain 원시 허용 도메인 문자열 (예: "https://example.com:8080", "sub.example.com").
+   * @return 리다이렉트 URL이 허용 도메인 패턴과 일치하면 true, 그렇지 않으면 false.
+   */
+  private boolean domainMatches(String redirectFullHost, String redirectHostOnly,
+      String rawAllowedDomain) {
+    String trimmedDomain = rawAllowedDomain.trim();
+
+    int protocolIndex = trimmedDomain.indexOf("://");
+    if (protocolIndex != -1) {
+      trimmedDomain = trimmedDomain.substring(protocolIndex + 3);
+    }
+
+    if (trimmedDomain.contains(":")) {
+      return redirectFullHost.equals(trimmedDomain);
+    } else {
+      return redirectHostOnly.equals(trimmedDomain);
     }
   }
 }
