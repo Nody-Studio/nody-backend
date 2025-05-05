@@ -45,19 +45,35 @@ public class OAuthAttributes {
   }
 
   private static OAuthAttributes ofGoogle(String userNameAttributeName, Map<String, Object> attributes) {
-    Object providerId = attributes.get(userNameAttributeName);
-    if (providerId == null) {
-      throw new IllegalArgumentException("Provider ID cannot be null. UserNameAttributeName: " + userNameAttributeName);
-    }
+    String name = (String) attributes.get("name");
+    String email = (String) attributes.get("email");
+    String providerId = (String) attributes.get(userNameAttributeName);
+
+    requireNonNullOrEmpty(name, "Name cannot be null or empty.");
+    requireNonNullOrEmpty(email, "Email cannot be null or empty.");
+    requireNonNullOrEmpty(providerId, "Provider ID cannot be null or empty. UserNameAttributeName: " + userNameAttributeName);
 
     return OAuthAttributes.builder()
-        .name((String) attributes.get("name"))
-        .email((String) attributes.get("email"))
+        .name(name)
+        .email(email)
         .provider("google")
-        .providerId((String) providerId)
+        .providerId(providerId)
         .attributes(attributes)
         .nameAttributeKey(userNameAttributeName)
         .build();
+  }
+
+  /**
+   * 문자열 값이 null 또는 비어 있는지 확인하고, 그렇지 않으면 예외를 발생시키는 헬퍼 메서드
+   *
+   * @param value   검사할 문자열 값
+   * @param message 예외 발생 시 사용할 메시지
+   * @throws IllegalArgumentException value가 null 또는 비어 있는 경우
+   */
+  private static void requireNonNullOrEmpty(String value, String message) {
+    if (value == null || value.isEmpty()) {
+      throw new IllegalArgumentException(message);
+    }
   }
 
   /**
