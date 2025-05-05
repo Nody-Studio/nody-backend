@@ -22,9 +22,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -38,6 +42,41 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
   @Value("${oauth2.redirect.url}")
   private String redirectUrl;
+
+  @Value("${oauth2.redirect.allowed-domains}")
+  private String allowedDomains;
+
+  private List<String> getAllowedDomainsList() {
+    return Arrays.asList(allowedDomains.split(","));
+  }
+
+  /**
+   * 리다이렉트 URL이 허용된 도메인인지 검증
+   * 
+   * @param url 검증할 URL
+   * @return 허용된 도메인이면 true, 아니면 false
+   */
+  private boolean isValidRedirectUrl(String url) {
+    try {
+      URI redirectUri = new URI(url);
+      String redirectHost = redirectUri.getScheme() + "://" + redirectUri.getHost();
+      if (redirectUri.getPort() != -1) {
+        redirectHost += ":" + redirectUri.getPort();
+      }
+
+      for (String allowedDomain : getAllowedDomainsList()) {
+        if (redirectHost.equals(allowedDomain.trim())) {
+          return true;
+        }
+      }
+
+      log.warn("Invalid redirect URL detected: {}", url);
+      return false;
+    } catch (URISyntaxException e) {
+      log.error("Invalid redirect URL format: {}", url, e);
+      return false;
+    }
+  }
 
   /**
    * OAuth2 로그인 성공 시 호출되는 메서드
@@ -85,7 +124,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       userRepository.saveAndFlush(user);
 
       log.info("Updated refresh token for user: {}", user.getId());
-      
+
       Cookie accessTokenCookie = new Cookie("access_token", accessToken);
       accessTokenCookie.setHttpOnly(false);
       accessTokenCookie.setSecure(true);
@@ -104,7 +143,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       refreshTokenCookie.setMaxAge((int) refreshTokenMaxAgeSeconds);
       response.addCookie(refreshTokenCookie);
       log.debug("Refresh token cookie set (HttpOnly). Max-Age: {} seconds", refreshTokenMaxAgeSeconds);
-      
+
+      // 리다이렉트 URL 유효성 검증
+      if (!isValidRedirectUrl(redirectUrl)) {
+        log.error("Invalid redirect URL: {}", redirectUrl);
+        throw new IllegalArgumentException("Invalid redirect URL: " + redirectUrl);
+      }
+
       String targetUrl = UriComponentsBuilder
           .fromUriString(redirectUrl)
           .queryParam("authSuccess", "true")
@@ -118,7 +163,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     } catch (Exception e) {
       log.error("Error occurred during OAuth2 success handling: {}", e.getMessage(), e);
-      
+
       Cookie removeAccessTokenCookie = new Cookie("access_token", null);
       removeAccessTokenCookie.setMaxAge(0);
       removeAccessTokenCookie.setPath("/");
@@ -128,7 +173,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       removeRefreshTokenCookie.setPath("/");
       response.addCookie(removeAccessTokenCookie);
       response.addCookie(removeRefreshTokenCookie);
-      
+
       String errorRedirectUrl = UriComponentsBuilder.fromUriString("/login")
           .queryParam("error", "true")
           .queryParam("message", "oauth_login_failed")
