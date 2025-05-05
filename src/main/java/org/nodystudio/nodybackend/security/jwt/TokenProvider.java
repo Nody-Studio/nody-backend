@@ -101,8 +101,8 @@ public class TokenProvider {
           .signWith(secretKey, Jwts.SIG.HS512)
           .compact();
     } catch (Exception e) {
-      log.error("Error creating access token for user ID: {}", user.getId(), e);
-      throw new RuntimeException("Error creating access token.");
+      log.error("Error creating refresh token for user ID: {}", user.getId(), e);
+      throw new RuntimeException("Error creating refresh token.");
     }
   }
 
