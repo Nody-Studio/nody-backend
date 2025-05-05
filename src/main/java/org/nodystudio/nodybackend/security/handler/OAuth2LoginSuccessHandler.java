@@ -52,7 +52,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
   /**
    * 리다이렉트 URL이 허용된 도메인인지 검증
-   * 
+   *
    * @param url 검증할 URL
    * @return 허용된 도메인이면 true, 아니면 false
    */
@@ -80,13 +80,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
   /**
    * OAuth2 로그인 성공 시 호출되는 메서드
-   * 
+   *
    * @param authentication OAuth2 인증 정보
    */
   @Override
   @Transactional
   public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-      Authentication authentication) throws IOException, ServletException {
+      Authentication authentication) throws IOException {
     log.info("OAuth2 Login successful! Starting handler logic.");
 
     try {
@@ -94,23 +94,27 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
 
       String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-      ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId(registrationId);
+      ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId(
+          registrationId);
       String userNameAttributeName = clientRegistration.getProviderDetails().getUserInfoEndpoint()
           .getUserNameAttributeName();
       OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName,
           oAuth2User.getAttributes());
 
-      log.info("Extracted OAuthAttributes: {}", attributes);
+      log.debug("Extracted OAuthAttributes: provider={}, providerId={}",
+          attributes.getProvider(), attributes.getProviderId());
 
       Optional<User> userOptional = userRepository
           .findByProviderAndSocialId(attributes.getProvider(), attributes.getProviderId());
 
       if (userOptional.isEmpty()) {
-        log.error("CRITICAL: User not found in DB after OAuth2 login success handling! Provider: {}, SocialId: {}",
+        log.error(
+            "CRITICAL: User not found in DB after OAuth2 login success handling! Provider: {}, SocialId: {}",
             attributes.getProvider(), attributes.getProviderId());
 
-        throw new IllegalStateException("User not found in DB after OAuth2 login success handling! Provider: "
-            + attributes.getProvider() + ", SocialId: " + attributes.getProviderId());
+        throw new IllegalStateException(
+            "User not found in DB after OAuth2 login success handling! Provider: "
+                + attributes.getProvider() + ", SocialId: " + attributes.getProviderId());
       }
 
       User user = userOptional.get();
@@ -142,9 +146,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       long refreshTokenMaxAgeSeconds = duration.getSeconds();
       refreshTokenCookie.setMaxAge((int) refreshTokenMaxAgeSeconds);
       response.addCookie(refreshTokenCookie);
-      log.debug("Refresh token cookie set (HttpOnly). Max-Age: {} seconds", refreshTokenMaxAgeSeconds);
+      log.debug("Refresh token cookie set (HttpOnly). Max-Age: {} seconds",
+          refreshTokenMaxAgeSeconds);
 
-      // 리다이렉트 URL 유효성 검증
       if (!isValidRedirectUrl(redirectUrl)) {
         log.error("Invalid redirect URL: {}", redirectUrl);
         throw new IllegalArgumentException("Invalid redirect URL: " + redirectUrl);
