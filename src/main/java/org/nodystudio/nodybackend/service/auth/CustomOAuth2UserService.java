@@ -41,10 +41,9 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
   @Override
   @Transactional
   public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-    log.debug("UserRequest details: ClientRegistration={}, AccessToken(type)={}, AdditionalParameters={}",
+    log.debug("UserRequest details: ClientRegistration={}, AccessToken(type)={}",
         userRequest.getClientRegistration(),
-        userRequest.getAccessToken().getTokenType(),
-        userRequest.getAdditionalParameters());
+        userRequest.getAccessToken().getTokenType());
 
     OAuth2User oAuth2User = null;
 
