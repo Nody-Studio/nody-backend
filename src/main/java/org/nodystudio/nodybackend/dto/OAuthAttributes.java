@@ -39,16 +39,22 @@ public class OAuthAttributes {
     if ("google".equals(registrationId)) {
       return ofGoogle(userNameAttributeName, attributes);
     }
+    // TODO: "naver", "kakao" 등 다른 소셜 로그인 제공자 구현 추가 필요
 
-    return null; // TODO: 임시 반환, 실제로는 예외 처리 또는 기본값 설정 필요
+    throw new IllegalArgumentException("지원하지 않는 소셜 로그인 제공자입니다.");
   }
 
   private static OAuthAttributes ofGoogle(String userNameAttributeName, Map<String, Object> attributes) {
+    Object providerId = attributes.get(userNameAttributeName);
+    if (providerId == null) {
+      throw new IllegalArgumentException("Provider ID cannot be null. UserNameAttributeName: " + userNameAttributeName);
+    }
+
     return OAuthAttributes.builder()
         .name((String) attributes.get("name"))
         .email((String) attributes.get("email"))
         .provider("google")
-        .providerId((String) attributes.get(userNameAttributeName))
+        .providerId((String) providerId)
         .attributes(attributes)
         .nameAttributeKey(userNameAttributeName)
         .build();
