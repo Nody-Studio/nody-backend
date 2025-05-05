@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -22,6 +23,8 @@ public class TokenProvider {
   private static final String CLAIM_USER_ID = "userId";
   private static final String CLAIM_EMAIL = "email";
   private static final String CLAIM_PROVIDER = "provider";
+
+  private static final int MINIMUM_KEY_LENGTH_BYTES = 32;
 
   private final SecretKey secretKey;
   private final long accessTokenExpirationMillis;
@@ -32,9 +35,19 @@ public class TokenProvider {
       @Value("${jwt.access-token-expiration-minutes}") long accessTokenExpirationMinutes,
       @Value("${jwt.refresh-token-expiration-days}") long refreshTokenExpirationDays) {
     byte[] keyBytes = Decoders.BASE64.decode(secretString);
+
+    if (keyBytes.length < MINIMUM_KEY_LENGTH_BYTES) {
+      String errorMsg = String.format(
+          "보안 키 길이가 부족합니다. 현재 길이: %d 바이트, 필요한 최소 길이: %d 바이트 (256 비트)",
+          keyBytes.length, MINIMUM_KEY_LENGTH_BYTES);
+      log.error(errorMsg);
+      throw new IllegalArgumentException(errorMsg);
+    }
+    
     this.secretKey = Keys.hmacShaKeyFor(keyBytes);
-    this.accessTokenExpirationMillis = accessTokenExpirationMinutes * 60 * 1000; // 분 -> 밀리초
-    this.refreshTokenExpirationMillis = refreshTokenExpirationDays * 24 * 60 * 60 * 1000; // 일 -> 밀리초
+    this.accessTokenExpirationMillis = accessTokenExpirationMinutes * 60 * 1000;
+    this.refreshTokenExpirationMillis = refreshTokenExpirationDays * 24 * 60 * 60 * 1000;
+    log.info("TokenProvider 초기화 완료. 비밀 키 길이: {} 바이트", keyBytes.length);
   }
 
   /**
@@ -44,19 +57,27 @@ public class TokenProvider {
    * @return 생성된 Access Token
    */
   public String createAccessToken(User user) {
-    Instant now = Instant.now();
-    Instant expirationInstant = now.plusMillis(accessTokenExpirationMillis);
-    Date expirationDate = Date.from(expirationInstant);
+    log.debug("Attempting to create access token for user ID: {}", user.getId());
+    try {
+      Instant now = Instant.now();
+      Instant expirationInstant = now.plusMillis(accessTokenExpirationMillis);
+      Date expirationDate = Date.from(expirationInstant);
 
-    return Jwts.builder()
-        .subject(user.getSocialId()) // 토큰 제목 (일반적으로 사용자 식별자)
-        .claim(CLAIM_USER_ID, user.getId())
-        .claim(CLAIM_EMAIL, user.getEmail())
-        .claim(CLAIM_PROVIDER, user.getProvider())
-        .issuedAt(Date.from(now)) // 발급 시간
-        .expiration(expirationDate) // 만료 시간
-        .signWith(secretKey, Jwts.SIG.HS512) // 서명 알고리즘 및 키
-        .compact();
+      String token = Jwts.builder()
+          .subject(user.getSocialId())
+          .claim(CLAIM_USER_ID, user.getId())
+          .claim(CLAIM_EMAIL, user.getEmail())
+          .claim(CLAIM_PROVIDER, user.getProvider())
+          .issuedAt(Date.from(now))
+          .expiration(expirationDate)
+          .signWith(secretKey, Jwts.SIG.HS512)
+          .compact();
+      log.debug("Successfully created access token. Is token null? {}", token == null);
+      return token;
+    } catch (Exception e) {
+      log.error("Error creating access token for user ID: {}", user.getId(), e);
+      return null;
+    }
   }
 
   /**
@@ -70,8 +91,12 @@ public class TokenProvider {
     Instant expirationInstant = now.plusMillis(refreshTokenExpirationMillis);
     Date expirationDate = Date.from(expirationInstant);
 
+    String jti = UUID.randomUUID().toString();
+
     return Jwts.builder()
-        .subject(user.getSocialId()) // Refresh Token에도 Subject 설정 (선택적)
+        .subject(user.getSocialId())
+        .claim(CLAIM_USER_ID, user.getId())
+        .id(jti)
         .issuedAt(Date.from(now))
         .expiration(expirationDate)
         .signWith(secretKey, Jwts.SIG.HS512)
@@ -157,5 +182,24 @@ public class TokenProvider {
     Instant now = Instant.now();
     Instant expirationInstant = now.plusMillis(refreshTokenExpirationMillis);
     return LocalDateTime.ofInstant(expirationInstant, ZoneId.systemDefault());
+  }
+
+  /**
+   * Access Token의 만료 시간(밀리초)을 반환합니다.
+   *
+   * @return Access Token 만료 시간 (long)
+   */
+  public long getAccessTokenExpirationMillis() {
+    return accessTokenExpirationMillis;
+  }
+
+  /**
+   * Refresh Token에서 사용자 ID 추출 (Access Token과 동일한 Claim 사용)
+   *
+   * @param token Refresh Token (JWT)
+   * @return 사용자 ID (Long)
+   */
+  public Long getUserIdFromRefreshToken(String token) {
+    return getClaims(token).get(CLAIM_USER_ID, Long.class);
   }
 }
