@@ -40,3 +40,5 @@ out/
 /src/main/resources/application-dev.yaml
 /src/main/resources/application-prod.yaml
 /.roo/
+/.junie/
+/docs/
