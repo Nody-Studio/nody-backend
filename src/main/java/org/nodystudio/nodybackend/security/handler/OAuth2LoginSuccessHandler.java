@@ -86,7 +86,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
       User user = userOptional.get();
       log.info("Found user in DB: {}", user.getId());
 
-      String accessToken = tokenProvider.createAccessToken(user);
       String refreshToken = tokenProvider.createRefreshToken(user);
       LocalDateTime refreshTokenExpiry = tokenProvider.getRefreshTokenExpiry();
 
@@ -95,6 +94,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
       log.info("Updated refresh token for user: {}", user.getId());
 
+      String accessToken = tokenProvider.createAccessToken(user);
       Cookie accessTokenCookie = new Cookie("access_token", accessToken);
       accessTokenCookie.setHttpOnly(true);
       accessTokenCookie.setSecure(true);
