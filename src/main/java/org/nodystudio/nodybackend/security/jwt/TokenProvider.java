@@ -1,20 +1,26 @@
 package org.nodystudio.nodybackend.security.jwt;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SecureDigestAlgorithm;
 import io.jsonwebtoken.security.SecurityException;
-import lombok.extern.slf4j.Slf4j;
-import org.nodystudio.nodybackend.domain.user.User;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import javax.crypto.SecretKey;
+import lombok.extern.slf4j.Slf4j;
+import org.nodystudio.nodybackend.domain.user.User;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -25,6 +31,7 @@ public class TokenProvider {
   private static final String CLAIM_PROVIDER = "provider";
 
   private static final int MINIMUM_KEY_LENGTH_BYTES = 64;
+  private static final SecureDigestAlgorithm<SecretKey, SecretKey> SIGNATURE_ALGORITHM = Jwts.SIG.HS512;
 
   private final SecretKey secretKey;
   private final long accessTokenExpirationMillis;
@@ -45,9 +52,10 @@ public class TokenProvider {
     }
 
     this.secretKey = Keys.hmacShaKeyFor(keyBytes);
-    this.accessTokenExpirationMillis = accessTokenExpirationMinutes * 60 * 1000;
-    this.refreshTokenExpirationMillis = refreshTokenExpirationDays * 24 * 60 * 60 * 1000;
-    log.info("TokenProvider 초기화 완료. 비밀 키 길이: {} 바이트", keyBytes.length);
+    this.accessTokenExpirationMillis = TimeUnit.MINUTES.toMillis(accessTokenExpirationMinutes);
+    this.refreshTokenExpirationMillis = TimeUnit.DAYS.toMillis(refreshTokenExpirationDays);
+    log.info("TokenProvider 초기화 완료. 비밀 키 길이: {} 바이트. Access Token 만료: {}ms, Refresh Token 만료: {}ms",
+        keyBytes.length, this.accessTokenExpirationMillis, this.refreshTokenExpirationMillis);
   }
 
   /**
@@ -70,7 +78,7 @@ public class TokenProvider {
           .claim(CLAIM_PROVIDER, user.getProvider())
           .issuedAt(Date.from(now))
           .expiration(expirationDate)
-          .signWith(secretKey, Jwts.SIG.HS512)
+          .signWith(secretKey, SIGNATURE_ALGORITHM)
           .compact();
     } catch (Exception e) {
       log.error("Error creating access token for user ID: {}", user.getId(), e);
@@ -79,12 +87,13 @@ public class TokenProvider {
   }
 
   /**
-   * Refresh Token 생성 (별도 Claim 없이 만료 시간만 길게 설정)
+   * Refresh Token 생성
    *
-   * @param user 사용자 정보 (Subject 설정용)
+   * @param user 사용자 정보 (Subject 및 userId Claim 설정용)
    * @return 생성된 Refresh Token
    */
   public String createRefreshToken(User user) {
+    log.debug("Attempting to create refresh token for user ID: {}", user.getId());
     try {
       Instant now = Instant.now();
       Instant expirationInstant = now.plusMillis(refreshTokenExpirationMillis);
@@ -98,7 +107,7 @@ public class TokenProvider {
           .id(jti)
           .issuedAt(Date.from(now))
           .expiration(expirationDate)
-          .signWith(secretKey, Jwts.SIG.HS512)
+          .signWith(secretKey, SIGNATURE_ALGORITHM)
           .compact();
     } catch (Exception e) {
       log.error("Error creating refresh token for user ID: {}", user.getId(), e);
@@ -125,7 +134,7 @@ public class TokenProvider {
   /**
    * 토큰에서 사용자 ID 추출
    *
-   * @param token JWT 토큰
+   * @param token JWT 토큰 (Access Token 또는 Refresh Token)
    * @return 사용자 ID (Long)
    */
   public Long getUserIdFromToken(String token) {
@@ -160,7 +169,10 @@ public class TokenProvider {
    */
   public boolean validateToken(String token) {
     try {
-      Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+      Jwts.parser()
+          .verifyWith(secretKey)
+          .build()
+          .parseSignedClaims(token);
       return true;
     } catch (SecurityException | MalformedJwtException e) {
       log.warn("Invalid JWT signature: {}", e.getMessage());
@@ -177,9 +189,10 @@ public class TokenProvider {
   }
 
   /**
-   * Refresh Token의 만료 시간을 LocalDateTime으로 반환
+   * 현재 시간을 기준으로 새로 생성될 Refresh Token의 예상 만료 시간을 LocalDateTime으로 반환합니다.
+   * 이 메서드는 특정 토큰의 실제 만료 시간을 분석하지 않고, 시스템 설정에 따른 리프레시 토큰의 유효 기간을 알려줍니다.
    *
-   * @return Refresh Token 만료 시간
+   * @return 새로 생성될 Refresh Token의 예상 만료 시간 (LocalDateTime)
    */
   public LocalDateTime getRefreshTokenExpiry() {
     Instant now = Instant.now();
@@ -194,15 +207,5 @@ public class TokenProvider {
    */
   public long getAccessTokenExpirationMillis() {
     return accessTokenExpirationMillis;
-  }
-
-  /**
-   * Refresh Token에서 사용자 ID 추출 (Access Token과 동일한 Claim 사용)
-   *
-   * @param token Refresh Token (JWT)
-   * @return 사용자 ID (Long)
-   */
-  public Long getUserIdFromRefreshToken(String token) {
-    return getClaims(token).get(CLAIM_USER_ID, Long.class);
   }
 }
