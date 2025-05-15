@@ -5,8 +5,12 @@ import jakarta.validation.constraints.Email;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 import org.nodystudio.nodybackend.domain.BaseTimeEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -48,12 +52,16 @@ public class User extends BaseTimeEntity {
   @Column(name = "refresh_token_expiry")
   private LocalDateTime refreshTokenExpiry;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "role", nullable = false, length = 20)
+  @Builder.Default
+  private RoleType role = RoleType.USER;
+
   public void updateRefreshToken(String refreshToken, LocalDateTime refreshTokenExpiry) {
     this.refreshToken = refreshToken;
     this.refreshTokenExpiry = refreshTokenExpiry;
   }
 
-  // 사용자 정보 업데이트 메서드 (닉네임, 이메일 등) - 소셜 로그인 시 정보 갱신용
   public User updateOAuthInfo(String nickname, String email) {
     if (nickname != null && !nickname.isBlank()) {
       this.nickname = nickname;
@@ -64,5 +72,9 @@ public class User extends BaseTimeEntity {
   public void clearRefreshToken() {
     this.refreshToken = null;
     this.refreshTokenExpiry = null;
+  }
+
+  public List<GrantedAuthority> getRoles() {
+    return Collections.singletonList(new SimpleGrantedAuthority(this.role.getKey()));
   }
 }
