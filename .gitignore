@@ -42,3 +42,6 @@ out/
 /.roo/
 /.junie/
 /docs/
+
+.DS_Store
+.clinerules/rules.md
