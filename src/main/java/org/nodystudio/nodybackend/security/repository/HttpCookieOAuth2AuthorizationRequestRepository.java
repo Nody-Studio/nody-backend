@@ -2,6 +2,8 @@ package org.nodystudio.nodybackend.security.repository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.net.URI;
+import java.net.URISyntaxException;
 import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.util.CookieUtils;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
@@ -19,6 +21,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
   public static final String OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME = "oauth2_auth_request";
   public static final String REDIRECT_URI_PARAM_COOKIE_NAME = "redirect_uri";
+  public static final String ALLOWED_HOST = "localhost";
   private static final int COOKIE_EXPIRE_SECONDS = 180;
   private static final boolean SECURE_COOKIE = true;
   private static final String SAME_SITE = "Lax";
@@ -67,7 +70,7 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
         SAME_SITE);
 
     String redirectUriAfterLogin = request.getParameter(REDIRECT_URI_PARAM_COOKIE_NAME);
-    if (StringUtils.hasText(redirectUriAfterLogin)) {
+    if (StringUtils.hasText(redirectUriAfterLogin) && isValidRedirectUri(redirectUriAfterLogin)) {
       CookieUtils.addSecureCookie(
           response,
           REDIRECT_URI_PARAM_COOKIE_NAME,
@@ -75,6 +78,20 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
           COOKIE_EXPIRE_SECONDS,
           SECURE_COOKIE,
           SAME_SITE);
+    } else if (StringUtils.hasText(redirectUriAfterLogin)) {
+      log.warn("유효하지 않은 리다이렉트 URI: {}", redirectUriAfterLogin);
+    }
+  }
+
+  private boolean isValidRedirectUri(String uri) {
+    try {
+      URI redirectUri = new URI(uri);
+      String host = redirectUri.getHost();
+
+      return ALLOWED_HOST.equals(host);
+    } catch (URISyntaxException e) {
+      log.error("잘못된 리다이렉트 URI 형식: {}", uri, e);
+      return false;
     }
   }
 
