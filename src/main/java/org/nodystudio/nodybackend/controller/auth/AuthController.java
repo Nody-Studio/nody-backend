@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.nodystudio.nodybackend.dto.CommonResponseDto;
 import org.nodystudio.nodybackend.dto.TokenRefreshRequestDto;
@@ -29,13 +30,13 @@ public class AuthController {
   @ApiResponse(responseCode = "400", description = "유효하지 않거나 만료된 Refresh Token")
   @PostMapping("/refresh")
   public ResponseEntity<CommonResponseDto<TokenResponseDto>> refreshAccessToken(
-      @RequestBody TokenRefreshRequestDto requestDto) {
+      @Valid @RequestBody TokenRefreshRequestDto requestDto) {
     try {
       TokenResponseDto tokenData = authService.refreshAccessToken(requestDto);
       CommonResponseDto<TokenResponseDto> response = CommonResponseDto.success(
           "토큰이 성공적으로 재발급되었습니다.", tokenData);
       return ResponseEntity.ok(response);
-    } catch (IllegalArgumentException e) {
+    } catch (Exception e) {
       return ResponseEntity.badRequest().build();
     }
   }

@@ -32,6 +32,10 @@ public class AuthService {
   @Transactional
   public TokenResponseDto refreshAccessToken(TokenRefreshRequestDto requestDto) {
     String providedRefreshToken = requestDto.getRefreshToken();
+
+    if (providedRefreshToken == null || providedRefreshToken.isBlank()) {
+      throw new InvalidRefreshTokenException("리프레시 토큰를 찾을 수 없습니다.");
+    }
     log.debug("토큰 리프레시 요청 처리 시작");
 
     User user = validateRefreshTokenAndGetUser(providedRefreshToken);
