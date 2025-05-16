@@ -31,15 +31,6 @@ public class CookieUtils {
     return Optional.empty();
   }
 
-  public static void addCookie(
-      HttpServletResponse response, String name, String value, int maxAge) {
-    Cookie cookie = new Cookie(name, value);
-    cookie.setPath("/");
-    cookie.setHttpOnly(true);
-    cookie.setMaxAge(maxAge);
-    response.addCookie(cookie);
-  }
-
   /**
    * 보안 속성이 적용된 쿠키를 생성하고 응답에 추가합니다.
    *
@@ -50,7 +41,7 @@ public class CookieUtils {
    * @param secure   HTTPS에서만 쿠키를 전송할지 여부
    * @param sameSite 쿠키의 SameSite 속성 (Strict, Lax, None)
    */
-  public static void addSecureCookie(
+  public static void addCookie(
       HttpServletResponse response, String name, String value, int maxAge,
       boolean secure, String sameSite) {
     ResponseCookie responseCookie = ResponseCookie.from(name, value)
