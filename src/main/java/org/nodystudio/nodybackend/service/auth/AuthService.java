@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.domain.user.User;
 import org.nodystudio.nodybackend.dto.TokenRefreshRequestDto;
 import org.nodystudio.nodybackend.dto.TokenResponseDto;
-import org.nodystudio.nodybackend.exception.InvalidRefreshTokenException;
+import org.nodystudio.nodybackend.exception.custom.InvalidRefreshTokenException;
 import org.nodystudio.nodybackend.repository.UserRepository;
 import org.nodystudio.nodybackend.security.jwt.TokenProvider;
 import org.springframework.stereotype.Service;
