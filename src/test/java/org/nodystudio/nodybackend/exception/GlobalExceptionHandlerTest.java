@@ -9,6 +9,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nodystudio.nodybackend.controller.test.ExceptionTestController;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.SuccessCode;
 import org.springframework.test.web.servlet.MockMvc;
 
 class GlobalExceptionHandlerTest {
@@ -29,8 +31,10 @@ class GlobalExceptionHandlerTest {
   void getOk_shouldReturnSuccessResponse() throws Exception {
     mockMvc.perform(get("/api/test/exceptions/ok"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("success"))
-        .andExpect(jsonPath("$.message").value("모든 것이 정상적으로 작동합니다!"));
+        .andExpect(jsonPath("$.status").value(SuccessCode.OK.getStatus().value()))
+        .andExpect(jsonPath("$.code").value(SuccessCode.OK.getCode()))
+        .andExpect(jsonPath("$.message").value(SuccessCode.OK.getMessage()))
+        .andExpect(jsonPath("$.data.description").value("이것은 성공적인 응답의 데이터 부분입니다."));
   }
 
   @Test
@@ -39,7 +43,7 @@ class GlobalExceptionHandlerTest {
     mockMvc.perform(get("/api/test/exceptions/not-found"))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
-        .andExpect(jsonPath("$.errorCode").value(ErrorCode.RESOURCE_NOT_FOUND.getCode()))
+        .andExpect(jsonPath("$.code").value(ErrorCode.RESOURCE_NOT_FOUND.getCode()))
         .andExpect(jsonPath("$.message").value("'User'에서 'id' 값이 '12345'인 리소스를 찾을 수 없습니다."));
   }
 
@@ -49,7 +53,7 @@ class GlobalExceptionHandlerTest {
     mockMvc.perform(get("/api/test/exceptions/unauthorized"))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.status").value(401))
-        .andExpect(jsonPath("$.errorCode").value(ErrorCode.USER_NOT_AUTHENTICATED.getCode()))
+        .andExpect(jsonPath("$.code").value(ErrorCode.USER_NOT_AUTHENTICATED.getCode()))
         .andExpect(jsonPath("$.message").value("인증되지 않은 사용자입니다"));
   }
 
@@ -59,9 +63,8 @@ class GlobalExceptionHandlerTest {
     mockMvc.perform(get("/api/test/exceptions/forbidden"))
         .andExpect(status().isForbidden())
         .andExpect(jsonPath("$.status").value(403))
-        .andExpect(jsonPath("$.errorCode").value(ErrorCode.ACCESS_DENIED.getCode()))
-        .andExpect(
-            jsonPath("$.message").value("접근이 거부되었습니다."));
+        .andExpect(jsonPath("$.code").value(ErrorCode.ACCESS_DENIED.getCode()))
+        .andExpect(jsonPath("$.message").value("접근이 거부되었습니다."));
   }
 
   @Test
@@ -70,10 +73,9 @@ class GlobalExceptionHandlerTest {
     mockMvc.perform(get("/api/test/exceptions/validation"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.status").value(400))
-        .andExpect(jsonPath("$.errorCode").value(ErrorCode.VALIDATION_ERROR.getCode()))
+        .andExpect(jsonPath("$.code").value(ErrorCode.VALIDATION_ERROR.getCode()))
         .andExpect(jsonPath("$.message").value("요청 유효성 검사에 실패했습니다"))
-        .andExpect(
-            jsonPath("$.errors.username").value("사용자 이름은 4자에서 20자 사이여야 합니다"))
+        .andExpect(jsonPath("$.errors.username").value("사용자 이름은 4자에서 20자 사이여야 합니다"))
         .andExpect(jsonPath("$.errors.email").value("이메일 형식이 올바르지 않습니다"));
   }
 
@@ -84,7 +86,7 @@ class GlobalExceptionHandlerTest {
     mockMvc.perform(get("/api/test/exceptions/error"))
         .andExpect(status().isInternalServerError())
         .andExpect(jsonPath("$.status").value(500))
-        .andExpect(jsonPath("$.errorCode").value(ErrorCode.INTERNAL_SERVER_ERROR.getCode()))
+        .andExpect(jsonPath("$.code").value(ErrorCode.INTERNAL_SERVER_ERROR.getCode()))
         .andExpect(jsonPath("$.message").value("서버 내부 오류가 발생했습니다."));
   }
 }
