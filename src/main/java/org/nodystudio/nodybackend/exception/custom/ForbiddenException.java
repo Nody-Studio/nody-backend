@@ -1,6 +1,6 @@
 package org.nodystudio.nodybackend.exception.custom;
 
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 
 /**
  * 인증된 사용자가 권한이 없는 리소스에 접근 시 발생하는 예외 (ErrorCode.ACCESS_DENIED 사용)

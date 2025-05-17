@@ -1,6 +1,6 @@
 package org.nodystudio.nodybackend.exception.custom;
 
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 
 /**
  * 유효하지 않은 Refresh Token 관련 예외 (ErrorCode.INVALID_REFRESH_TOKEN 또는 REFRESH_TOKEN_EXPIRED 사용)

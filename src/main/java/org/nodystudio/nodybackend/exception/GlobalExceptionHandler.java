@@ -7,7 +7,8 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.nodystudio.nodybackend.dto.ErrorResponseDto;
+import org.nodystudio.nodybackend.dto.ApiResponse;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 import org.nodystudio.nodybackend.exception.custom.BusinessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -33,12 +34,12 @@ public class GlobalExceptionHandler {
    * @param details   추가 로깅 세부 정보 (선택적)
    * @return 표준화된 에러 응답
    */
-  private ResponseEntity<ErrorResponseDto> handleException(Exception ex, ErrorCode errorCode,
+  private ResponseEntity<ApiResponse<Object>> handleException(Exception ex, ErrorCode errorCode,
       LogLevel logLevel, String... details) {
 
     logException(ex, logLevel, details);
 
-    final ErrorResponseDto response = ErrorResponseDto.of(errorCode, ex);
+    final ApiResponse<Object> response = ApiResponse.error(errorCode, ex);
     return ResponseEntity.status(errorCode.getStatus()).body(response);
   }
 
@@ -74,7 +75,7 @@ public class GlobalExceptionHandler {
    * {@link BusinessException} 및 하위 예외 처리
    */
   @ExceptionHandler(BusinessException.class)
-  public ResponseEntity<ErrorResponseDto> handleBusinessException(BusinessException ex) {
+  public ResponseEntity<ApiResponse<Object>> handleBusinessException(BusinessException ex) {
     final ErrorCode errorCode = ex.getErrorCode();
     String logMessage = String.format("Details: ErrorCode=%s, HttpStatus=%s", errorCode.getCode(),
         errorCode.getStatus());
@@ -85,7 +86,7 @@ public class GlobalExceptionHandler {
    * {@link MethodArgumentNotValidException} 처리 (주로 @Valid 어노테이션 실패 시)
    */
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValidException(
+  public ResponseEntity<ApiResponse<Object>> handleMethodArgumentNotValidException(
       MethodArgumentNotValidException ex) {
     return handleException(ex, ErrorCode.INVALID_INPUT_VALUE, LogLevel.WARN);
   }
@@ -94,7 +95,7 @@ public class GlobalExceptionHandler {
    * {@link BindException} 처리 (데이터 바인딩 실패 시)
    */
   @ExceptionHandler(BindException.class)
-  public ResponseEntity<ErrorResponseDto> handleBindException(BindException ex) {
+  public ResponseEntity<ApiResponse<Object>> handleBindException(BindException ex) {
     return handleException(ex, ErrorCode.INVALID_INPUT_VALUE, LogLevel.WARN);
   }
 
@@ -102,7 +103,7 @@ public class GlobalExceptionHandler {
    * {@link MissingServletRequestParameterException} 처리 (필수 요청 파라미터 누락 시)
    */
   @ExceptionHandler(MissingServletRequestParameterException.class)
-  public ResponseEntity<ErrorResponseDto> handleMissingServletRequestParameterException(
+  public ResponseEntity<ApiResponse<Object>> handleMissingServletRequestParameterException(
       MissingServletRequestParameterException ex) {
     return handleException(ex, ErrorCode.REQUEST_PARAM_MISSING, LogLevel.WARN);
   }
@@ -111,7 +112,7 @@ public class GlobalExceptionHandler {
    * {@link MethodArgumentTypeMismatchException} 처리 (요청 파라미터 타입 불일치 시)
    */
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-  public ResponseEntity<ErrorResponseDto> handleMethodArgumentTypeMismatchException(
+  public ResponseEntity<ApiResponse<Object>> handleMethodArgumentTypeMismatchException(
       MethodArgumentTypeMismatchException ex) {
     return handleException(ex, ErrorCode.INVALID_TYPE_VALUE, LogLevel.WARN);
   }
@@ -120,7 +121,7 @@ public class GlobalExceptionHandler {
    * {@link HttpMessageNotReadableException} 처리 (잘못된 요청 본문 형식 등)
    */
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ResponseEntity<ErrorResponseDto> handleHttpMessageNotReadableException(
+  public ResponseEntity<ApiResponse<Object>> handleHttpMessageNotReadableException(
       HttpMessageNotReadableException ex) {
     return handleException(ex, ErrorCode.INVALID_INPUT_VALUE, LogLevel.WARN);
   }
@@ -129,7 +130,7 @@ public class GlobalExceptionHandler {
    * {@link HttpRequestMethodNotSupportedException} 처리 (지원하지 않는 HTTP 메서드 요청 시)
    */
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-  public ResponseEntity<ErrorResponseDto> handleHttpRequestMethodNotSupportedException(
+  public ResponseEntity<ApiResponse<Object>> handleHttpRequestMethodNotSupportedException(
       HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
     String logMessage = String.format("Method %s not supported for %s. Supported methods are: %s",
         ex.getMethod(), request.getRequestURL().toString(), ex.getSupportedHttpMethods());
@@ -140,7 +141,7 @@ public class GlobalExceptionHandler {
    * {@link NoHandlerFoundException} 처리 (요청 URL에 해당하는 핸들러를 찾을 수 없을 때)
    */
   @ExceptionHandler(NoHandlerFoundException.class)
-  public ResponseEntity<ErrorResponseDto> handleNoHandlerFoundException(
+  public ResponseEntity<ApiResponse<Object>> handleNoHandlerFoundException(
       NoHandlerFoundException ex) {
     String logMessage = String.format("No handler found for %s %s", ex.getHttpMethod(),
         ex.getRequestURL());
@@ -151,7 +152,7 @@ public class GlobalExceptionHandler {
    * AccessDeniedException 처리 (파일 시스템 접근 거부)
    */
   @ExceptionHandler(java.nio.file.AccessDeniedException.class)
-  public ResponseEntity<ErrorResponseDto> handleNioAccessDeniedException(
+  public ResponseEntity<ApiResponse<Object>> handleNioAccessDeniedException(
       java.nio.file.AccessDeniedException ex) {
     return handleException(ex, ErrorCode.ACCESS_DENIED, LogLevel.WARN);
   }
@@ -160,7 +161,7 @@ public class GlobalExceptionHandler {
    * AccessDeniedException 처리 (Spring Security 접근 거부)
    */
   @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-  public ResponseEntity<ErrorResponseDto> handleSpringSecurityAccessDeniedException(
+  public ResponseEntity<ApiResponse<Object>> handleSpringSecurityAccessDeniedException(
       org.springframework.security.access.AccessDeniedException ex) {
     return handleException(ex, ErrorCode.ACCESS_DENIED, LogLevel.WARN);
   }
@@ -169,16 +170,16 @@ public class GlobalExceptionHandler {
    * JWT 예외 처리 그룹 - 토큰 만료
    */
   @ExceptionHandler(ExpiredJwtException.class)
-  public ResponseEntity<ErrorResponseDto> handleExpiredJwtException(ExpiredJwtException ex) {
+  public ResponseEntity<ApiResponse<Object>> handleExpiredJwtException(ExpiredJwtException ex) {
     return handleException(ex, ErrorCode.EXPIRED_TOKEN, LogLevel.WARN);
   }
 
   /**
    * JWT 예외 처리 그룹 - 보안/서명 예외, 형식 오류, 미지원 토큰, 기타 JWT 예외
    */
-  @ExceptionHandler({ SecurityException.class, MalformedJwtException.class,
-      UnsupportedJwtException.class, JwtException.class })
-  public ResponseEntity<ErrorResponseDto> handleJwtExceptions(JwtException ex) {
+  @ExceptionHandler({SecurityException.class, MalformedJwtException.class,
+      UnsupportedJwtException.class, JwtException.class})
+  public ResponseEntity<ApiResponse<Object>> handleJwtExceptions(JwtException ex) {
     return handleException(ex, ErrorCode.INVALID_TOKEN, LogLevel.WARN);
   }
 
@@ -186,7 +187,7 @@ public class GlobalExceptionHandler {
    * 처리되지 않은 모든 {@link Exception} 처리
    */
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ErrorResponseDto> handleGlobalException(Exception ex) {
+  public ResponseEntity<ApiResponse<Object>> handleGlobalException(Exception ex) {
     return handleException(ex, ErrorCode.INTERNAL_SERVER_ERROR, LogLevel.ERROR);
   }
 }

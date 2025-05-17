@@ -1,6 +1,6 @@
 package org.nodystudio.nodybackend.exception.custom;
 
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 
 /**
  * 유효하지 않은 토큰 관련 예외 (ErrorCode.INVALID_TOKEN 또는 EXPIRED_TOKEN 사용)

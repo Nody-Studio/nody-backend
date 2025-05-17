@@ -3,7 +3,7 @@ package org.nodystudio.nodybackend.exception.custom;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 import org.nodystudio.nodybackend.exception.FieldErrorProvider;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
