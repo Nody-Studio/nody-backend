@@ -7,6 +7,7 @@ import org.nodystudio.nodybackend.domain.user.User;
 import org.nodystudio.nodybackend.dto.TokenRefreshRequestDto;
 import org.nodystudio.nodybackend.dto.TokenResponseDto;
 import org.nodystudio.nodybackend.exception.custom.InvalidRefreshTokenException;
+import org.nodystudio.nodybackend.exception.custom.InvalidTokenException;
 import org.nodystudio.nodybackend.repository.UserRepository;
 import org.nodystudio.nodybackend.security.jwt.TokenProvider;
 import org.springframework.stereotype.Service;
@@ -69,14 +70,14 @@ public class AuthService {
    */
   private Long validateTokenSignatureAndExtractUserId(String token) {
     try {
-      if (!tokenProvider.validateToken(token)) {
-        log.warn("리프레시 토큰 서명 검증 실패");
-        throw new InvalidRefreshTokenException("토큰 서명 또는 형식이 유효하지 않습니다.");
-      }
+      tokenProvider.validateToken(token);
       return tokenProvider.getUserIdFromToken(token);
+    } catch (InvalidTokenException e) {
+      log.warn("리프레시 토큰 유효성 검증 실패 (InvalidTokenException): {}", e.getMessage());
+      throw new InvalidRefreshTokenException("제공된 리프레시 토큰이 유효하지 않습니다.", e);
     } catch (Exception e) {
-      log.warn("토큰 검증 또는 사용자 ID 추출 실패: {}", e.getMessage());
-      throw new InvalidRefreshTokenException("유효하지 않은 리프레시 토큰입니다.", e);
+      log.warn("토큰 검증 또는 사용자 ID 추출 중 예기치 않은 오류 발생: {}", e.getMessage());
+      throw new InvalidRefreshTokenException("리프레시 토큰 처리 중 오류가 발생했습니다.", e);
     }
   }
 
