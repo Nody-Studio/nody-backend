@@ -1,6 +1,6 @@
 package org.nodystudio.nodybackend.exception.custom;
 
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 /**

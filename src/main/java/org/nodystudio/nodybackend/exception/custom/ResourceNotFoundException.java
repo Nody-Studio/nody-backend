@@ -1,6 +1,6 @@
 package org.nodystudio.nodybackend.exception.custom;
 
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 
 /**
  * 요청한 리소스를 찾을 수 없을 때 발생하는 예외 (ErrorCode.RESOURCE_NOT_FOUND 사용)

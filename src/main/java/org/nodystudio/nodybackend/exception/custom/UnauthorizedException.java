@@ -1,6 +1,6 @@
 package org.nodystudio.nodybackend.exception.custom;
 
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 
 /**
  * 인증되지 않은 사용자가 접근 시 발생하는 예외 (ErrorCode.AUTHENTICATION_FAILED 또는 관련 코드 사용)
