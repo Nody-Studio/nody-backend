@@ -2,7 +2,7 @@ package org.nodystudio.nodybackend.service.auth;
 
 import java.util.Collections;
 import java.util.Optional;
-
+import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.domain.user.User;
 import org.nodystudio.nodybackend.dto.OAuthAttributes;
 import org.nodystudio.nodybackend.repository.UserRepository;
@@ -17,8 +17,6 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -49,7 +47,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
     try {
       oAuth2User = delegate.loadUser(userRequest);
-      log.debug("Successfully loaded user info from provider. Attributes: {}", oAuth2User.getAttributes());
+      log.debug("Successfully loaded user info from provider. Attributes: {}",
+          oAuth2User.getAttributes());
     } catch (OAuth2AuthenticationException e) {
       log.error("OAuth2AuthenticationException occurred while loading user info for {}: {}",
           userRequest.getClientRegistration().getRegistrationId(), e.getMessage(), e);
@@ -65,12 +64,15 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     }
 
     String registrationId = userRequest.getClientRegistration().getRegistrationId();
-    String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint()
+    String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
+        .getUserInfoEndpoint()
         .getUserNameAttributeName();
 
-    log.debug("OAuth2 Provider: {}, User Name Attribute: {}", registrationId, userNameAttributeName);
+    log.debug("OAuth2 Provider: {}, User Name Attribute: {}", registrationId,
+        userNameAttributeName);
 
-    OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName, oAuth2User.getAttributes());
+    OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttributeName,
+        oAuth2User.getAttributes());
     log.debug("Created OAuthAttributes for provider: {}", registrationId);
 
     User user = saveOrUpdate(attributes);
@@ -89,7 +91,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
    * @return 저장되거나 업데이트된 User 엔티티
    */
   User saveOrUpdate(OAuthAttributes attributes) {
-    log.debug("Attempting to find user by provider [{}] and socialId [{}]", attributes.getProvider(),
+    log.debug("Attempting to find user by provider [{}] and socialId [{}]",
+        attributes.getProvider(),
         attributes.getProviderId());
     Optional<User> userOptional = userRepository.findByProviderAndSocialId(attributes.getProvider(),
         attributes.getProviderId());
@@ -98,12 +101,14 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
     if (userOptional.isPresent()) {
       user = userOptional.get();
       user.updateOAuthInfo(attributes.getName(), attributes.getEmail());
-      log.info("Existing user found and updated: provider={}, socialId={}", attributes.getProvider(),
+      log.info("Existing user found and updated: provider={}, socialId={}",
+          attributes.getProvider(),
           attributes.getProviderId());
     } else {
       user = attributes.toEntity();
       user = userRepository.saveAndFlush(user);
-      log.info("New user registered: provider={}, socialId={}", attributes.getProvider(), attributes.getProviderId());
+      log.info("New user registered: provider={}, socialId={}", attributes.getProvider(),
+          attributes.getProviderId());
     }
     return user;
   }
