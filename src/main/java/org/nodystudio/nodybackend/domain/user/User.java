@@ -74,6 +74,12 @@ public class User extends BaseTimeEntity {
     this.refreshTokenExpiry = null;
   }
 
+  /**
+   * 사용자의 역할을 Spring Security {@link GrantedAuthority} 목록으로 반환합니다.
+   * 현재 시스템에서는 사용자가 단일 역할만 가지지만, Spring Security 호환성을 위해 목록 형태로 반환합니다.
+   *
+   * @return 사용자의 권한 목록 (항상 단일 요소를 가짐)
+   */
   public List<GrantedAuthority> getRoles() {
     return Collections.singletonList(new SimpleGrantedAuthority(this.role.getKey()));
   }
