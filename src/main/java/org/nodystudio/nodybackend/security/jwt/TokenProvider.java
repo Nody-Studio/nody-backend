@@ -19,6 +19,9 @@ import java.util.concurrent.TimeUnit;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.domain.user.User;
+import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.exception.custom.InvalidTokenException;
+import org.nodystudio.nodybackend.exception.custom.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -82,7 +85,7 @@ public class TokenProvider {
           .compact();
     } catch (Exception e) {
       log.error("Error creating access token for user ID: {}", user.getId(), e);
-      throw new RuntimeException("Error creating access token.");
+      throw new UnauthorizedException("토큰 생성 중 오류가 발생했습니다.", ErrorCode.AUTHENTICATION_FAILED, e);
     }
   }
 
@@ -111,7 +114,7 @@ public class TokenProvider {
           .compact();
     } catch (Exception e) {
       log.error("Error creating refresh token for user ID: {}", user.getId(), e);
-      throw new RuntimeException("Error creating refresh token.");
+      throw new UnauthorizedException("리프레시 토큰 생성 중 오류가 발생했습니다.", ErrorCode.AUTHENTICATION_FAILED, e);
     }
   }
 
@@ -176,16 +179,20 @@ public class TokenProvider {
       return true;
     } catch (SecurityException | MalformedJwtException e) {
       log.warn("Invalid JWT signature: {}", e.getMessage());
+      throw new InvalidTokenException("유효하지 않은 토큰 서명입니다.", e);
     } catch (ExpiredJwtException e) {
       log.warn("Expired JWT token: {}", e.getMessage());
+      throw new InvalidTokenException("만료된 토큰입니다.", ErrorCode.EXPIRED_TOKEN, e);
     } catch (UnsupportedJwtException e) {
       log.warn("Unsupported JWT token: {}", e.getMessage());
+      throw new InvalidTokenException("지원하지 않는 형식의 토큰입니다.", e);
     } catch (IllegalArgumentException e) {
       log.warn("JWT claims string is empty: {}", e.getMessage());
+      throw new InvalidTokenException("JWT claims가 비어있습니다.", e);
     } catch (JwtException e) {
       log.warn("JWT validation error: {}", e.getMessage());
+      throw new InvalidTokenException("토큰 검증 중 오류가 발생했습니다.", e);
     }
-    return false;
   }
 
   /**
