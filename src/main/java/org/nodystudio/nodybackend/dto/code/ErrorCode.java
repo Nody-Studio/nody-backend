@@ -1,4 +1,4 @@
-package org.nodystudio.nodybackend.exception;
+package org.nodystudio.nodybackend.dto.code;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
