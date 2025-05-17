@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.domain.user.User;
-import org.nodystudio.nodybackend.exception.ErrorCode;
+import org.nodystudio.nodybackend.dto.code.ErrorCode;
 import org.nodystudio.nodybackend.exception.custom.InvalidTokenException;
 import org.nodystudio.nodybackend.exception.custom.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Value;
