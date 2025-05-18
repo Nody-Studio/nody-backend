@@ -47,7 +47,6 @@ public class GlobalExceptionHandler {
       return ResponseEntity.status(errorCode.getStatus()).body(response);
     }
 
-    // 바인딩 결과가 있는 예외 처리
     if (ex instanceof BindException) {
       BindingResult bindingResult = ((BindException) ex).getBindingResult();
       Map<String, String> fieldErrors = extractFieldErrors(bindingResult);
@@ -205,8 +204,8 @@ public class GlobalExceptionHandler {
   /**
    * JWT 예외 처리 그룹 - 보안/서명 예외, 형식 오류, 미지원 토큰, 기타 JWT 예외
    */
-  @ExceptionHandler({SecurityException.class, MalformedJwtException.class,
-      UnsupportedJwtException.class, JwtException.class})
+  @ExceptionHandler({ SecurityException.class, MalformedJwtException.class,
+      UnsupportedJwtException.class, JwtException.class })
   public ResponseEntity<ApiResponse<Object>> handleJwtExceptions(JwtException ex) {
     return handleException(ex, ErrorCode.INVALID_TOKEN, LogLevel.WARN);
   }
