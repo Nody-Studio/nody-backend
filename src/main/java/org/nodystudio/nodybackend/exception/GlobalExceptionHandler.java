@@ -47,8 +47,28 @@ public class GlobalExceptionHandler {
       return ResponseEntity.status(errorCode.getStatus()).body(response);
     }
 
+    // 바인딩 결과가 있는 예외 처리
+    if (ex instanceof BindException) {
+      BindingResult bindingResult = ((BindException) ex).getBindingResult();
+      Map<String, String> fieldErrors = extractFieldErrors(bindingResult);
+      final ApiResponse<Object> response = ApiResponse.error(errorCode, fieldErrors);
+      return ResponseEntity.status(errorCode.getStatus()).body(response);
+    }
+
     final ApiResponse<Object> response = ApiResponse.error(errorCode, ex.getMessage());
     return ResponseEntity.status(errorCode.getStatus()).body(response);
+  }
+
+  /**
+   * BindingResult에서 필드 오류를 추출하는 유틸리티 메서드
+   */
+  private Map<String, String> extractFieldErrors(BindingResult bindingResult) {
+    return bindingResult.getFieldErrors().stream()
+        .filter(error -> error.getDefaultMessage() != null)
+        .collect(java.util.stream.Collectors.toMap(
+            FieldError::getField,
+            FieldError::getDefaultMessage,
+            (existingValue, newValue) -> existingValue));
   }
 
   /**
@@ -96,18 +116,7 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiResponse<Object>> handleMethodArgumentNotValidException(
       MethodArgumentNotValidException ex) {
-    logException(ex, LogLevel.WARN);
-    BindingResult bindingResult = ex.getBindingResult();
-    Map<String, String> fieldErrors = bindingResult.getFieldErrors().stream()
-        .filter(error -> error.getDefaultMessage() != null)
-        .collect(java.util.stream.Collectors.toMap(
-            FieldError::getField,
-            FieldError::getDefaultMessage,
-            (existingValue, newValue) -> existingValue));
-
-    final ApiResponse<Object> response = ApiResponse.error(ErrorCode.INVALID_INPUT_VALUE,
-        fieldErrors);
-    return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(response);
+    return handleException(ex, ErrorCode.INVALID_INPUT_VALUE, LogLevel.WARN);
   }
 
   /**
@@ -115,18 +124,7 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(BindException.class)
   public ResponseEntity<ApiResponse<Object>> handleBindException(BindException ex) {
-    logException(ex, LogLevel.WARN);
-    BindingResult bindingResult = ex.getBindingResult();
-    Map<String, String> fieldErrors = bindingResult.getFieldErrors().stream()
-        .filter(error -> error.getDefaultMessage() != null)
-        .collect(java.util.stream.Collectors.toMap(
-            FieldError::getField,
-            FieldError::getDefaultMessage,
-            (existingValue, newValue) -> existingValue));
-
-    final ApiResponse<Object> response = ApiResponse.error(ErrorCode.INVALID_INPUT_VALUE,
-        fieldErrors);
-    return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(response);
+    return handleException(ex, ErrorCode.INVALID_INPUT_VALUE, LogLevel.WARN);
   }
 
   /**
