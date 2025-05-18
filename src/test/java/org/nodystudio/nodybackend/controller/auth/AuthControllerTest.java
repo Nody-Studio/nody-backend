@@ -1,5 +1,14 @@
 package org.nodystudio.nodybackend.controller.auth;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.times;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,18 +20,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nodystudio.nodybackend.dto.TokenRefreshRequestDto;
 import org.nodystudio.nodybackend.dto.TokenResponseDto;
 import org.nodystudio.nodybackend.dto.code.ErrorCode;
-import org.nodystudio.nodybackend.exception.GlobalExceptionHandler;
 import org.nodystudio.nodybackend.dto.code.SuccessCode;
+import org.nodystudio.nodybackend.exception.GlobalExceptionHandler;
 import org.nodystudio.nodybackend.exception.custom.InvalidRefreshTokenException;
 import org.nodystudio.nodybackend.service.auth.AuthService;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerTest {
@@ -79,7 +83,7 @@ class AuthControllerTest {
   }
 
   @Test
-  @DisplayName("POST /api/auth/refresh - 유효하지 않은 리프레시 토큰으로 실패 시 400 Bad Request 반환")
+  @DisplayName("POST /api/auth/refresh - 유효하지 않은 리프레시 토큰으로 실패 시 401 Unauthorized 반환")
   void refreshAccessToken_shouldReturnBadRequest_whenTokenIsInvalid() throws Exception {
     // given
     TokenRefreshRequestDto requestDto = new TokenRefreshRequestDto("invalid-token");

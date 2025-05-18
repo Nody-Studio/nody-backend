@@ -54,6 +54,7 @@ class TokenProviderTest {
 
     // then
     assertThat(accessToken).isNotNull();
+    assertThat(tokenProvider.validateToken(accessToken)).isTrue();
 
     Claims claims = Jwts.parser()
         .verifyWith(testSecretKey)

@@ -70,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
    * @return 필터링하지 않아야 하면 {@code true}, 그렇지 않으면 {@code false}
    */
   @Override
-  protected boolean shouldNotFilter(HttpServletRequest request) {
+  protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
     String requestPath = request.getRequestURI();
     return EXCLUDED_PATHS.stream()
         .anyMatch(pattern -> pathMatcher.match(pattern, requestPath));
