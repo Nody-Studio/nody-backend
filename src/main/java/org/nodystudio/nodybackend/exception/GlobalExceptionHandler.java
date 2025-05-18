@@ -6,6 +6,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.dto.ApiResponse;
 import org.nodystudio.nodybackend.dto.code.ErrorCode;
@@ -13,6 +14,8 @@ import org.nodystudio.nodybackend.exception.custom.BusinessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -39,7 +42,12 @@ public class GlobalExceptionHandler {
 
     logException(ex, logLevel, details);
 
-    final ApiResponse<Object> response = ApiResponse.error(errorCode, ex);
+    if (ex instanceof FieldErrorProvider) {
+      final ApiResponse<Object> response = ApiResponse.error(errorCode, ex);
+      return ResponseEntity.status(errorCode.getStatus()).body(response);
+    }
+
+    final ApiResponse<Object> response = ApiResponse.error(errorCode, ex.getMessage());
     return ResponseEntity.status(errorCode.getStatus()).body(response);
   }
 
@@ -67,7 +75,7 @@ public class GlobalExceptionHandler {
     if (logLevel == LogLevel.WARN) {
       log.warn(logMessage);
     } else {
-      log.error(logMessage);
+      log.error(logMessage, ex);
     }
   }
 
@@ -88,7 +96,18 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ApiResponse<Object>> handleMethodArgumentNotValidException(
       MethodArgumentNotValidException ex) {
-    return handleException(ex, ErrorCode.INVALID_INPUT_VALUE, LogLevel.WARN);
+    logException(ex, LogLevel.WARN);
+    BindingResult bindingResult = ex.getBindingResult();
+    Map<String, String> fieldErrors = bindingResult.getFieldErrors().stream()
+        .filter(error -> error.getDefaultMessage() != null)
+        .collect(java.util.stream.Collectors.toMap(
+            FieldError::getField,
+            FieldError::getDefaultMessage,
+            (existingValue, newValue) -> existingValue));
+
+    final ApiResponse<Object> response = ApiResponse.error(ErrorCode.INVALID_INPUT_VALUE,
+        fieldErrors);
+    return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(response);
   }
 
   /**
@@ -96,7 +115,18 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler(BindException.class)
   public ResponseEntity<ApiResponse<Object>> handleBindException(BindException ex) {
-    return handleException(ex, ErrorCode.INVALID_INPUT_VALUE, LogLevel.WARN);
+    logException(ex, LogLevel.WARN);
+    BindingResult bindingResult = ex.getBindingResult();
+    Map<String, String> fieldErrors = bindingResult.getFieldErrors().stream()
+        .filter(error -> error.getDefaultMessage() != null)
+        .collect(java.util.stream.Collectors.toMap(
+            FieldError::getField,
+            FieldError::getDefaultMessage,
+            (existingValue, newValue) -> existingValue));
+
+    final ApiResponse<Object> response = ApiResponse.error(ErrorCode.INVALID_INPUT_VALUE,
+        fieldErrors);
+    return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(response);
   }
 
   /**
