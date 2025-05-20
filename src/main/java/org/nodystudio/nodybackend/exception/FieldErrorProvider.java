@@ -1,6 +1,7 @@
 package org.nodystudio.nodybackend.exception;
 
-import java.util.Map;
+import java.util.List;
+import org.nodystudio.nodybackend.dto.FieldErrorDto;
 
 /**
  * 필드별 오류 메시지를 제공하는 예외를 위한 인터페이스입니다.
@@ -8,9 +9,9 @@ import java.util.Map;
 public interface FieldErrorProvider {
 
   /**
-   * 필드별 오류 메시지 맵을 반환합니다.
+   * 필드별 오류 메시지 리스트를 반환합니다.
    *
-   * @return 필드명을 키로, 오류 메시지를 값으로 하는 맵 (수정 불가할 수 있음)
+   * @return FieldErrorDto 객체의 리스트 (수정 불가할 수 있음)
    */
-  Map<String, String> getFieldErrors();
+  List<FieldErrorDto> getFieldErrorsList();
 }

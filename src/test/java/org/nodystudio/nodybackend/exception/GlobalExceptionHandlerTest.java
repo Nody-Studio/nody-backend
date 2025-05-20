@@ -75,8 +75,10 @@ class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.status").value(400))
         .andExpect(jsonPath("$.code").value(ErrorCode.VALIDATION_ERROR.getCode()))
         .andExpect(jsonPath("$.message").value("요청 유효성 검사에 실패했습니다"))
-        .andExpect(jsonPath("$.errors.username").value("사용자 이름은 4자에서 20자 사이여야 합니다"))
-        .andExpect(jsonPath("$.errors.email").value("이메일 형식이 올바르지 않습니다"));
+        .andExpect(jsonPath("$.errors[?(@.field == 'username')].message")
+            .value("사용자 이름은 4자에서 20자 사이여야 합니다"))
+        .andExpect(jsonPath("$.errors[?(@.field == 'email')].message")
+            .value("이메일 형식이 올바르지 않습니다"));
   }
 
   @Test
