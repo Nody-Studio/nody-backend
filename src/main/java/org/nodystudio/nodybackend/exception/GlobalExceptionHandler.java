@@ -6,16 +6,17 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.dto.ApiResponse;
+import org.nodystudio.nodybackend.dto.FieldErrorDto;
 import org.nodystudio.nodybackend.dto.code.ErrorCode;
 import org.nodystudio.nodybackend.exception.custom.BusinessException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -47,10 +48,9 @@ public class GlobalExceptionHandler {
       return ResponseEntity.status(errorCode.getStatus()).body(response);
     }
 
-    // 바인딩 결과가 있는 예외 처리
     if (ex instanceof BindException) {
       BindingResult bindingResult = ((BindException) ex).getBindingResult();
-      Map<String, String> fieldErrors = extractFieldErrors(bindingResult);
+      List<FieldErrorDto> fieldErrors = extractFieldErrors(bindingResult);
       final ApiResponse<Object> response = ApiResponse.error(errorCode, fieldErrors);
       return ResponseEntity.status(errorCode.getStatus()).body(response);
     }
@@ -62,13 +62,11 @@ public class GlobalExceptionHandler {
   /**
    * BindingResult에서 필드 오류를 추출하는 유틸리티 메서드
    */
-  private Map<String, String> extractFieldErrors(BindingResult bindingResult) {
+  private List<FieldErrorDto> extractFieldErrors(BindingResult bindingResult) {
     return bindingResult.getFieldErrors().stream()
         .filter(error -> error.getDefaultMessage() != null)
-        .collect(java.util.stream.Collectors.toMap(
-            FieldError::getField,
-            FieldError::getDefaultMessage,
-            (existingValue, newValue) -> existingValue));
+        .map(error -> new FieldErrorDto(error.getField(), error.getDefaultMessage()))
+        .collect(Collectors.toList());
   }
 
   /**
@@ -205,8 +203,8 @@ public class GlobalExceptionHandler {
   /**
    * JWT 예외 처리 그룹 - 보안/서명 예외, 형식 오류, 미지원 토큰, 기타 JWT 예외
    */
-  @ExceptionHandler({SecurityException.class, MalformedJwtException.class,
-      UnsupportedJwtException.class, JwtException.class})
+  @ExceptionHandler({ SecurityException.class, MalformedJwtException.class,
+      UnsupportedJwtException.class, JwtException.class })
   public ResponseEntity<ApiResponse<Object>> handleJwtExceptions(JwtException ex) {
     return handleException(ex, ErrorCode.INVALID_TOKEN, LogLevel.WARN);
   }

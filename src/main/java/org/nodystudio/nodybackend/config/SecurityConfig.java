@@ -2,6 +2,7 @@ package org.nodystudio.nodybackend.config;
 
 import java.util.List;
 import org.nodystudio.nodybackend.security.filter.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,7 +40,8 @@ public class SecurityConfig {
   @Bean
   @Profile("dev")
   public SecurityFilterChain devSecurityFilterChain(HttpSecurity http,
-      CorsConfigurationSource corsConfigurationSource) throws Exception {
+      @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource)
+      throws Exception {
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .csrf(AbstractHttpConfigurer::disable)
@@ -50,7 +52,8 @@ public class SecurityConfig {
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers(PathRequest.toH2Console()).permitAll()
             .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
-            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+            .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
+            .requestMatchers("/openapi.json").permitAll()
             .anyRequest().authenticated())
         .headers(headers -> headers
             .frameOptions(FrameOptionsConfig::sameOrigin))
@@ -63,7 +66,8 @@ public class SecurityConfig {
   @Bean
   @Profile("prod")
   public SecurityFilterChain prodSecurityFilterChain(HttpSecurity http,
-      CorsConfigurationSource corsConfigurationSource) throws Exception {
+      @Qualifier("corsConfigurationSource") CorsConfigurationSource corsConfigurationSource)
+      throws Exception {
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .csrf(AbstractHttpConfigurer::disable)
