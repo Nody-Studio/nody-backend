@@ -10,7 +10,14 @@ import org.nodystudio.nodybackend.domain.user.User;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserDetailResponseDto {
 
+  /**
+   * 사용자 이메일 주소
+   */
   private String email;
+
+  /**
+   * 사용자 닉네임
+   */
   private String nickname;
 
   @Builder
@@ -24,8 +31,8 @@ public class UserDetailResponseDto {
     String nickname = user.getNickname();
 
     return UserDetailResponseDto.builder()
-        .email(email != null ? email : "N/A")
-        .nickname(nickname != null ? nickname : "N/A")
+        .email(email)
+        .nickname(nickname)
         .build();
   }
 }

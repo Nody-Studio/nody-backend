@@ -7,6 +7,7 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.dto.ApiResponse;
 import org.nodystudio.nodybackend.dto.FieldErrorDto;
@@ -65,7 +66,7 @@ public class GlobalExceptionHandler {
     return bindingResult.getFieldErrors().stream()
         .filter(error -> error.getDefaultMessage() != null)
         .map(error -> new FieldErrorDto(error.getField(), error.getDefaultMessage()))
-        .collect(java.util.stream.Collectors.toList());
+        .collect(Collectors.toList());
   }
 
   /**

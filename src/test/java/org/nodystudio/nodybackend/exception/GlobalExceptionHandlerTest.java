@@ -34,7 +34,7 @@ class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.status").value(SuccessCode.OK.getStatus().value()))
         .andExpect(jsonPath("$.code").value(SuccessCode.OK.getCode()))
         .andExpect(jsonPath("$.message").value(SuccessCode.OK.getMessage()))
-        .andExpect(jsonPath("$.data.description").value("이것은 성공적인 응답의 데이터 부분입니다."));
+        .andExpect(jsonPath("$.data").value("이것은 성공적인 응답의 데이터 부분입니다."));
   }
 
   @Test
