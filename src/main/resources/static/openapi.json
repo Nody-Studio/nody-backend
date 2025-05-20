@@ -1,0 +1,457 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "nody-backend",
+    "version": "v1.0.0"
+  },
+  "servers": [
+    {
+      "url": ""
+    }
+  ],
+  "tags": [
+    {
+      "name": "AuthController",
+      "description": "인증 관련 API"
+    },
+    {
+      "name": "ExceptionTestController",
+      "description": "예외 처리 테스트를 위한 컨트롤러 개발 환경에서만 사용하고, 프로덕션 환경에서는 비활성화하는 것이 좋습니다."
+    },
+    {
+      "name": "UserController",
+      "description": "사용자 관련 API"
+    }
+  ],
+  "paths": {
+    "/api/user/me": {
+      "get": {
+        "summary": "인증된 사용자의 기본 정보를 조회",
+        "deprecated": false,
+        "description": "HTTP Status 200: 사용자 정보 조회 성공, HTTP Status 401: 인증되지 않은 사용자",
+        "tags": [
+          "UserController"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUserDetailResponseDto"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": "{\n  \"status\": 0,\n  \"code\": \"\",\n  \"message\": \"\",\n  \"data\": {\n    \"email\": \"\",\n    \"nickname\": \"\"\n  },\n  \"errors\": [\n    {\n      \"field\": \"\",\n      \"message\": \"\"\n    }\n  ],\n  \"timestamp\": \"yyyy-MM-dd HH:mm:ss\"\n}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-user-me-GET",
+        "parameters": []
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "summary": "Access Token 재발급\n유효한 Refresh Token을 사용하여 새로운 Access Token을 발급받습니다.",
+        "deprecated": false,
+        "tags": [
+          "AuthController"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRefreshRequestDto"
+              },
+              "examples": {
+                "json": {
+                  "summary": "test data",
+                  "value": "{\n  \"refreshToken\": \"\"\n}"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTokenResponseDto"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": "{\n  \"status\": 0,\n  \"code\": \"\",\n  \"message\": \"\",\n  \"data\": {\n    \"grantType\": \"\",\n    \"accessToken\": \"\",\n    \"refreshToken\": \"\",\n    \"accessTokenExpiresIn\": 0\n  },\n  \"errors\": [\n    {\n      \"field\": \"\",\n      \"message\": \"\"\n    }\n  ],\n  \"timestamp\": \"yyyy-MM-dd HH:mm:ss\"\n}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-auth-refresh-POST",
+        "parameters": []
+      }
+    },
+    "/api/test/exceptions/ok": {
+      "get": {
+        "summary": "정상 응답 테스트",
+        "deprecated": false,
+        "tags": [
+          "ExceptionTestController"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": "{\n  \"status\": 0,\n  \"code\": \"\",\n  \"message\": \"\",\n  \"data\": {},\n  \"errors\": [\n    {\n      \"field\": \"\",\n      \"message\": \"\"\n    }\n  ],\n  \"timestamp\": \"yyyy-MM-dd HH:mm:ss\"\n}"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-test-exceptions-ok-GET",
+        "parameters": []
+      }
+    },
+    "/api/test/exceptions/not-found": {
+      "get": {
+        "summary": "ResourceNotFoundException 테스트",
+        "deprecated": false,
+        "tags": [
+          "ExceptionTestController"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-test-exceptions-not-found-GET",
+        "parameters": []
+      }
+    },
+    "/api/test/exceptions/unauthorized": {
+      "get": {
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "ExceptionTestController"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-test-exceptions-unauthorized-GET",
+        "parameters": []
+      }
+    },
+    "/api/test/exceptions/forbidden": {
+      "get": {
+        "summary": "ForbiddenException 테스트",
+        "deprecated": false,
+        "tags": [
+          "ExceptionTestController"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-test-exceptions-forbidden-GET",
+        "parameters": []
+      }
+    },
+    "/api/test/exceptions/validation": {
+      "get": {
+        "summary": "ValidationException 테스트",
+        "deprecated": false,
+        "tags": [
+          "ExceptionTestController"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-test-exceptions-validation-GET",
+        "parameters": []
+      }
+    },
+    "/api/test/exceptions/error": {
+      "get": {
+        "summary": "일반 예외 테스트",
+        "deprecated": false,
+        "tags": [
+          "ExceptionTestController"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                },
+                "examples": {
+                  "json": {
+                    "summary": "test data",
+                    "value": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        "operationId": "api-test-exceptions-error-GET",
+        "parameters": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "defaultPrimitive": {
+        "format": "string",
+        "type": "string"
+      },
+      "FieldErrorDto": {
+        "properties": {
+          "field": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "message": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseUserDetailResponseDto": {
+        "properties": {
+          "status": {
+            "format": "int32",
+            "description": "No comments found.",
+            "type": "integer",
+            "example": "0"
+          },
+          "code": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "message": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "data": {
+            "description": "No comments found.(object)",
+            "$ref": "#/components/schemas/UserDetailResponseDto"
+          },
+          "errors": {
+            "description": "No comments found.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldErrorDto"
+            }
+          },
+          "timestamp": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          }
+        }
+      },
+      "TokenRefreshRequestDto": {
+        "properties": {
+          "refreshToken": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          }
+        }
+      },
+      "UserDetailResponseDto": {
+        "properties": {
+          "email": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "nickname": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          }
+        }
+      },
+      "TokenResponseDto": {
+        "properties": {
+          "grantType": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "accessToken": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "refreshToken": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "accessTokenExpiresIn": {
+            "format": "int64",
+            "description": "No comments found.",
+            "type": "number",
+            "example": "0"
+          }
+        }
+      },
+      "ApiResponseTokenResponseDto": {
+        "properties": {
+          "status": {
+            "format": "int32",
+            "description": "No comments found.",
+            "type": "integer",
+            "example": "0"
+          },
+          "code": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "message": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "data": {
+            "description": "No comments found.(object)",
+            "$ref": "#/components/schemas/TokenResponseDto"
+          },
+          "errors": {
+            "description": "No comments found.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldErrorDto"
+            }
+          },
+          "timestamp": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          }
+        }
+      },
+      "ApiResponse": {
+        "properties": {
+          "status": {
+            "format": "int32",
+            "description": "No comments found.",
+            "type": "integer",
+            "example": "0"
+          },
+          "code": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "message": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string"
+          },
+          "data": {
+            "description": "No comments found.(object)",
+            "type": "object"
+          },
+          "errors": {
+            "description": "No comments found.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldErrorDto"
+            }
+          },
+          "timestamp": {
+            "format": "string",
+            "description": "No comments found.",
+            "type": "string",
+            "example": "yyyy-MM-dd HH:mm:ss"
+          }
+        }
+      }
+    }
+  }
+}

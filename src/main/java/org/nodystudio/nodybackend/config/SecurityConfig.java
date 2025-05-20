@@ -53,6 +53,7 @@ public class SecurityConfig {
             .requestMatchers(PathRequest.toH2Console()).permitAll()
             .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
             .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
+            .requestMatchers("/openapi.json").permitAll()
             .anyRequest().authenticated())
         .headers(headers -> headers
             .frameOptions(FrameOptionsConfig::sameOrigin))
