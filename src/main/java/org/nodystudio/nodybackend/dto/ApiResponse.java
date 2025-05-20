@@ -2,6 +2,7 @@ package org.nodystudio.nodybackend.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,7 +27,7 @@ public class ApiResponse<T> {
   private String code;
   private String message;
   private T data;
-  private List<FieldErrorDto> errors; // Map<String, String>에서 List<FieldErrorDto>로 변경
+  private List<FieldErrorDto> errors;
   private final LocalDateTime timestamp = LocalDateTime.now();
 
   /**
@@ -46,7 +47,7 @@ public class ApiResponse<T> {
     this.status = status;
     this.code = code;
     this.message = message;
-    this.errors = errors;
+    this.errors = errors == null ? Collections.emptyList() : Collections.unmodifiableList(errors);
   }
 
   /**
@@ -123,8 +124,7 @@ public class ApiResponse<T> {
    * @return 성공 ApiResponse 객체
    */
   public static <T> ApiResponse<T> success(SuccessCode successCode, String message, T data) {
-    String determinedMessage =
-        (message == null || message.trim().isEmpty()) ? successCode.getMessage() : message;
+    String determinedMessage = (message == null || message.trim().isEmpty()) ? successCode.getMessage() : message;
     return new ApiResponse<>(successCode.getStatus().value(), successCode.getCode(),
         determinedMessage, data);
   }
@@ -152,8 +152,7 @@ public class ApiResponse<T> {
    * @return 실패 ApiResponse 객체
    */
   public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
-    String determinedMessage =
-        (message == null || message.trim().isEmpty()) ? errorCode.getMessage() : message;
+    String determinedMessage = (message == null || message.trim().isEmpty()) ? errorCode.getMessage() : message;
     return new ApiResponse<>(errorCode.getStatus().value(), errorCode.getCode(), determinedMessage);
   }
 
@@ -166,8 +165,7 @@ public class ApiResponse<T> {
    * @return 실패 ApiResponse 객체
    */
   public static <T> ApiResponse<T> error(ErrorCode errorCode,
-      List<FieldErrorDto> errors) { // Map 대신
-    // List<FieldErrorDto>
+      List<FieldErrorDto> errors) {
     return new ApiResponse<>(errorCode.getStatus().value(), errorCode.getCode(),
         errorCode.getMessage(), errors);
   }
