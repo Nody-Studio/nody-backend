@@ -3,11 +3,13 @@ name: CI/CD
 on:
   push:
     branches:
+      - main
+      - develop
       - fix/*
       - refactor/*
       - feature/*
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
     branches:
       - main
       - develop
@@ -41,10 +43,6 @@ jobs:
       checks: write
       pull-requests: write
       statuses: write
-    if: |
-      (github.event_name == 'push' && (startsWith(github.ref_name, 'fix/') || startsWith(github.ref_name, 'refactor/') || startsWith(github.ref_name, 'feature/'))) ||
-      (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened')) ||
-      (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -101,13 +99,11 @@ jobs:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop') && github.event.pull_request.base.repo.full_name == 'Nody-Studio/nody-backend'
+    if: github.repository == 'Nody-Studio/nody-backend' && github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop' || startsWith(github.ref_name, 'fix/'))
 
     steps:
-      - name: Checkout PR head commit
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Download JAR Artifact
         uses: actions/download-artifact@v4
@@ -129,7 +125,7 @@ jobs:
       - name: Build, tag, and push the image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.event.pull_request.head.sha }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
           docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
@@ -137,7 +133,7 @@ jobs:
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.event.pull_request.head.sha }}"
+          image-ref: "${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
@@ -148,12 +144,10 @@ jobs:
     name: Deploy to AWS Elastic Beanstalk
     runs-on: ubuntu-latest
     needs: build-and-push-image
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop') && github.event.pull_request.base.repo.full_name == 'Nody-Studio/nody-backend'
+    if: github.repository == 'Nody-Studio/nody-backend' && github.event_name == 'push' && (github.ref_name == 'main' || github.ref_name == 'develop' || startsWith(github.ref_name, 'fix/'))
     steps:
-      - name: Checkout PR head commit
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -174,7 +168,7 @@ jobs:
           {
             "AWSEBDockerrunVersion": "1",
             "Image": {
-              "Name": "${ECR_REGISTRY_DEPLOY}/${{ env.ECR_REPOSITORY }}:${{ github.event.pull_request.head.sha }}",
+              "Name": "${ECR_REGISTRY_DEPLOY}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}",
               "Update": "true"
             },
             "Ports": [
@@ -194,7 +188,7 @@ jobs:
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: ${{ env.EB_APPLICATION_NAME }}
           environment_name: ${{ env.EB_ENVIRONMENT_NAME }}
-          version_label: pr${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          version_label: deploy-${{ github.sha }}
           region: ${{ env.AWS_REGION }}
           deployment_package: ebs-bundle.zip
           wait_for_deployment: true

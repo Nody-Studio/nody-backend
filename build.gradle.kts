@@ -1,6 +1,6 @@
 plugins {
     java
-    id("org.springframework.boot") version "3.4.5"
+    id("org.springframework.boot") version "3.5.0"
     id("io.spring.dependency-management") version "1.1.7"
     id("com.ly.smart-doc") version "3.1.0"
 }
@@ -25,6 +25,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.apache.tomcat.embed:tomcat-embed-core:10.1.42")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
