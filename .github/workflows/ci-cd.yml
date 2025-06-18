@@ -44,7 +44,7 @@ jobs:
     if: |
       (github.event_name == 'push' && (startsWith(github.ref_name, 'fix/') || startsWith(github.ref_name, 'refactor/') || startsWith(github.ref_name, 'feature/'))) ||
       (github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.action == 'reopened')) ||
-      (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop'))
+      (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop' || startsWith(github.base_ref, 'fix/')))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -101,7 +101,7 @@ jobs:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop') && github.event.pull_request.base.repo.full_name == 'Nody-Studio/nody-backend'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop' || startsWith(github.base_ref, 'fix/')) && github.event.pull_request.base.repo.full_name == 'Nody-Studio/nody-backend'
 
     steps:
       - name: Checkout PR head commit
@@ -148,7 +148,7 @@ jobs:
     name: Deploy to AWS Elastic Beanstalk
     runs-on: ubuntu-latest
     needs: build-and-push-image
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop') && github.event.pull_request.base.repo.full_name == 'Nody-Studio/nody-backend'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && (github.base_ref == 'main' || github.base_ref == 'develop' || startsWith(github.base_ref, 'fix/')) && github.event.pull_request.base.repo.full_name == 'Nody-Studio/nody-backend'
     steps:
       - name: Checkout PR head commit
         uses: actions/checkout@v4
