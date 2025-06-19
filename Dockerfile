@@ -1,10 +1,10 @@
-FROM eclipse-temurin:21.0.7_6-jdk-ubi9-minimal
+FROM amazoncorretto:21.0.7-al2023
 
 ARG JAR_FILE=build/libs/*.jar
 
-RUN microdnf install -y curl && microdnf clean all
-
-RUN useradd --create-home --shell /bin/bash appuser
+RUN dnf install -y shadow-utils && \
+    useradd --create-home --shell /bin/bash appuser && \
+    dnf clean all
 
 COPY ${JAR_FILE} app.jar
 
