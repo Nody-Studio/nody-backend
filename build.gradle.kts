@@ -25,6 +25,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.apache.tomcat.embed:tomcat-embed-core:10.1.42")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
