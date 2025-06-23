@@ -7,6 +7,7 @@ import org.nodystudio.nodybackend.security.handler.CustomAccessDeniedHandler;
 import org.nodystudio.nodybackend.security.handler.CustomAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -75,7 +76,14 @@ public class SecurityConfig {
     return new BCryptPasswordEncoder();
   }
 
-  // --- 개발 환경(dev) 보안 설정 ---
+  /**
+   * Configures the security filter chain for the development environment.
+   *
+   * Enables CORS using the provided configuration, disables CSRF protection, form login, and HTTP Basic authentication, and sets session management to stateless. Defines authorization rules to permit public and documentation endpoints, restricts a test endpoint to users with the "ADMIN" role, and requires authentication for all other requests. Configures custom handlers for authentication and access denied exceptions, and adds the JWT authentication filter.
+   *
+   * @return the configured SecurityFilterChain for the development profile
+   * @throws Exception if an error occurs during security configuration
+   */
   @Bean
   @Profile("dev")
   public SecurityFilterChain devSecurityFilterChain(HttpSecurity http,
@@ -91,8 +99,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
             .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
-            .requestMatchers("/openapi.json", "/favicon.ico").permitAll()
-            .requestMatchers("/actuator/**").permitAll()
+            .requestMatchers("/openapi.json").permitAll()
             .requestMatchers("/api/test/exceptions/security-access-test").hasRole("ADMIN")
             .anyRequest().authenticated())
         .exceptionHandling(exceptions -> exceptions
@@ -119,8 +126,7 @@ public class SecurityConfig {
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
-            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/favicon.ico").permitAll()
-            .requestMatchers("/actuator/**").permitAll()
+            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .anyRequest().authenticated())
         .exceptionHandling(exceptions -> exceptions
             .authenticationEntryPoint(customAuthenticationEntryPoint)
@@ -138,7 +144,13 @@ public class SecurityConfig {
     return http.build();
   }
 
-  // --- 공통 CORS 설정 ---
+  /**
+   * Creates and configures a {@link CorsConfigurationSource} bean with allowed origins, methods, headers, and credentials for CORS requests.
+   *
+   * The configuration applies to all paths and exposes the Authorization header, allows credentials, and sets a max age for preflight requests.
+   *
+   * @return the configured {@link CorsConfigurationSource}
+   */
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
