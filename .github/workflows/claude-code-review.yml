@@ -49,7 +49,7 @@ jobs:
             - Security concerns
             - Test coverage
             
-            Be constructive and helpful in your feedback.
+            Be constructive and helpful in your feedback. Answer in **Korean**.
 
           # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
           # use_sticky_comment: true
