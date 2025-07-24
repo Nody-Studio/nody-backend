@@ -8,6 +8,7 @@ import org.nodystudio.nodybackend.domain.enums.SortDirection;
 import org.nodystudio.nodybackend.domain.enums.ThreadSortField;
 import org.nodystudio.nodybackend.domain.enums.ThreadType;
 import org.nodystudio.nodybackend.dto.ApiResponse;
+import org.nodystudio.nodybackend.dto.code.SuccessCode;
 import org.nodystudio.nodybackend.dto.thread.ThreadCreateRequest;
 import org.nodystudio.nodybackend.dto.thread.ThreadResponse;
 import org.nodystudio.nodybackend.dto.thread.ThreadSearchRequest;
@@ -87,7 +88,7 @@ public class ThreadController implements ThreadApiDocs {
     ThreadResponse response = threadService.createThread(request, userDetails.getEmail());
 
     return ResponseEntity.status(HttpStatus.CREATED)
-        .body(ApiResponse.success("스레드가 성공적으로 생성되었습니다.", response));
+        .body(ApiResponse.success(SuccessCode.CREATED, "스레드가 성공적으로 생성되었습니다.", response));
   }
 
   /**

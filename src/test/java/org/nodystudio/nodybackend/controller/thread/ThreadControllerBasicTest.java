@@ -54,7 +54,7 @@ class ThreadControllerBasicTest {
         assertThat(response.getStatusCode().value()).isEqualTo(201);
         assertThat(response.getBody()).isNotNull();
         ApiResponse<ThreadResponse> body = Objects.requireNonNull(response.getBody());
-        assertThat(body.getStatus()).isEqualTo(200);
+        assertThat(body.getStatus()).isEqualTo(201);
         assertThat(body.getData().getId()).isEqualTo(1L);
         assertThat(body.getData().getContent()).isEqualTo("새 스레드 내용");
         assertThat(body.getMessage()).isEqualTo("스레드가 성공적으로 생성되었습니다.");
