@@ -25,7 +25,16 @@ public enum SuccessCode {
 
   // 좋아요 관련 성공
   LIKE_TOGGLE_SUCCESS(HttpStatus.OK, "LIKE_S001", "좋아요 토글이 성공적으로 처리되었습니다."),
-  LIKE_STATUS_RETRIEVED(HttpStatus.OK, "LIKE_S002", "좋아요 상태가 성공적으로 조회되었습니다.");
+  LIKE_STATUS_RETRIEVED(HttpStatus.OK, "LIKE_S002", "좋아요 상태가 성공적으로 조회되었습니다."),
+
+  // 스레드 관련 성공
+  THREAD_CREATED(HttpStatus.CREATED, "THREAD_S001", "스레드가 성공적으로 생성되었습니다."),
+  THREAD_RETRIEVED(HttpStatus.OK, "THREAD_S002", "스레드 조회가 완료되었습니다."),
+  THREAD_LIST_RETRIEVED(HttpStatus.OK, "THREAD_S003", "스레드 목록 조회가 완료되었습니다."),
+  THREAD_UPDATED(HttpStatus.OK, "THREAD_S004", "스레드가 성공적으로 수정되었습니다."),
+  THREAD_DELETED(HttpStatus.OK, "THREAD_S005", "스레드가 성공적으로 삭제되었습니다."),
+  INDEPENDENT_THREAD_LIST_RETRIEVED(HttpStatus.OK, "THREAD_S006", "독립 스레드 목록 조회가 완료되었습니다."),
+  LINKED_THREAD_LIST_RETRIEVED(HttpStatus.OK, "THREAD_S007", "로그 연결 스레드 목록 조회가 완료되었습니다.");
 
   private final HttpStatus status;
   private final String code;
