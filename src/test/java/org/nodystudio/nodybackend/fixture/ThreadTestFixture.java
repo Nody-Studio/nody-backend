@@ -326,4 +326,174 @@ public class ThreadTestFixture {
             .mapToObj(i -> createThreadResponse((long) i, contentPrefix + " " + i, true))
             .toList();
     }
+
+    // ================================
+    // Builder 패턴 확장
+    // ================================
+
+    /**
+     * ThreadResponse Builder 패턴을 제공합니다.
+     * 더 유연한 테스트 데이터 생성을 위한 빌더 패턴입니다.
+     */
+    public static class ThreadResponseBuilder {
+        private Long id = DEFAULT_THREAD_ID;
+        private String content = DEFAULT_THREAD_CONTENT;
+        private boolean isPublic = true;
+        private boolean isLinkedToLog = false;
+        private Long logId = null;
+        private String userEmail = DEFAULT_USER_EMAIL;
+        private String userNickname = DEFAULT_USER_NICKNAME;
+        private LocalDateTime createdAt = LocalDateTime.now();
+        private LocalDateTime updatedAt = LocalDateTime.now();
+
+        public static ThreadResponseBuilder create() {
+            return new ThreadResponseBuilder();
+        }
+
+        public ThreadResponseBuilder withId(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public ThreadResponseBuilder withContent(String content) {
+            this.content = content;
+            return this;
+        }
+
+        public ThreadResponseBuilder withPublic(boolean isPublic) {
+            this.isPublic = isPublic;
+            return this;
+        }
+
+        public ThreadResponseBuilder withLinkedToLog(boolean isLinkedToLog) {
+            this.isLinkedToLog = isLinkedToLog;
+            return this;
+        }
+
+        public ThreadResponseBuilder withLogId(Long logId) {
+            this.logId = logId;
+            this.isLinkedToLog = (logId != null);
+            return this;
+        }
+
+        public ThreadResponseBuilder withUserEmail(String userEmail) {
+            this.userEmail = userEmail;
+            return this;
+        }
+
+        public ThreadResponseBuilder withUserNickname(String userNickname) {
+            this.userNickname = userNickname;
+            return this;
+        }
+
+        public ThreadResponseBuilder withCreatedAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+            return this;
+        }
+
+        public ThreadResponseBuilder withUpdatedAt(LocalDateTime updatedAt) {
+            this.updatedAt = updatedAt;
+            return this;
+        }
+
+        public ThreadResponse build() {
+            // 기존 정적 메서드를 활용하여 ThreadResponse 생성
+            ThreadResponse baseResponse = createThreadResponse(id, content, isPublic);
+            
+            // 추가 필드 설정이 필요한 경우 여기서 처리
+            return ThreadResponse.builder()
+                .id(id)
+                .content(content)
+                .isPublic(isPublic)
+                .isLinkedToLog(isLinkedToLog)
+                .isIndependent(!isLinkedToLog)
+                .user(baseResponse.getUser()) // 기존 메서드로 생성된 user 사용
+                .log(null) // 필요시 설정
+                .viewCount(0L)
+                .likeCount(0L)
+                .isLiked(false)
+                .createdAt(createdAt)
+                .updatedAt(updatedAt)
+                .build();
+        }
+    }
+
+    /**
+     * ThreadCreateRequest Builder 패턴을 제공합니다.
+     */
+    public static class ThreadCreateRequestBuilder {
+        private String content = "새 스레드 내용";
+        private Boolean isPublic = true;
+        private Long logId = null;
+
+        public static ThreadCreateRequestBuilder create() {
+            return new ThreadCreateRequestBuilder();
+        }
+
+        public ThreadCreateRequestBuilder withContent(String content) {
+            this.content = content;
+            return this;
+        }
+
+        public ThreadCreateRequestBuilder withPublic(Boolean isPublic) {
+            this.isPublic = isPublic;
+            return this;
+        }
+
+        public ThreadCreateRequestBuilder withLogId(Long logId) {
+            this.logId = logId;
+            return this;
+        }
+
+        public ThreadCreateRequest build() {
+            return ThreadCreateRequest.builder()
+                .content(content)
+                .isPublic(isPublic)
+                .logId(logId)
+                .build();
+        }
+    }
+
+    /**
+     * ThreadUpdateRequest Builder 패턴을 제공합니다.
+     */
+    public static class ThreadUpdateRequestBuilder {
+        private String content = null;
+        private Boolean isPublic = null;
+        private Long logId = null;
+        private Boolean disconnectLog = null;
+
+        public static ThreadUpdateRequestBuilder create() {
+            return new ThreadUpdateRequestBuilder();
+        }
+
+        public ThreadUpdateRequestBuilder withContent(String content) {
+            this.content = content;
+            return this;
+        }
+
+        public ThreadUpdateRequestBuilder withPublic(Boolean isPublic) {
+            this.isPublic = isPublic;
+            return this;
+        }
+
+        public ThreadUpdateRequestBuilder withLogId(Long logId) {
+            this.logId = logId;
+            return this;
+        }
+
+        public ThreadUpdateRequestBuilder withDisconnectLog(Boolean disconnectLog) {
+            this.disconnectLog = disconnectLog;
+            return this;
+        }
+
+        public ThreadUpdateRequest build() {
+            return ThreadUpdateRequest.builder()
+                .content(content)
+                .isPublic(isPublic)
+                .logId(logId)
+                .disconnectLog(disconnectLog)
+                .build();
+        }
+    }
 }

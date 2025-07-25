@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.nodystudio.nodybackend.config.ThreadTestConfiguration;
@@ -55,13 +58,14 @@ class ThreadControllerValidationTest {
             assertThat(violations).anyMatch(v -> v.getMessage().contains("100 이하여야 합니다"));
         }
 
-        @Test
+        @ParameterizedTest
+        @ValueSource(ints = {-10, -1, 0})
         @DisplayName("페이지 크기 최소값 미만 검증 테스트")
-        void threadSearchRequest_PageSizeBelowMin_ValidationError() {
+        void threadSearchRequest_PageSizeBelowMin_ValidationError(int invalidSize) {
             // given
             ThreadSearchRequest request = ThreadSearchRequest.builder()
                 .page(0)
-                .size(0)
+                .size(invalidSize)
                 .build();
 
             // when
@@ -93,12 +97,14 @@ class ThreadControllerValidationTest {
     @DisplayName("ThreadCreateRequest 유효성 검증")
     class ThreadCreateRequestValidationTests {
 
-        @Test
-        @DisplayName("빈 내용으로 스레드 생성 시 검증 오류가 발생한다")
-        void createThreadRequest_WithBlankContent_ValidationError() {
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {" ", "\t", "\n", "   "})
+        @DisplayName("빈 내용으로 스레드 생성 시 검증 오류 발생")
+        void createThreadRequest_WithBlankContent_ValidationError(String blankContent) {
             // given
             ThreadCreateRequest request = ThreadCreateRequest.builder()
-                .content("")
+                .content(blankContent)
                 .isPublic(true)
                 .build();
 
@@ -107,7 +113,7 @@ class ThreadControllerValidationTest {
 
             // then
             assertThat(violations).isNotEmpty();
-            assertThat(violations).anyMatch(v -> v.getMessage().contains("필수입니다"));
+            assertThat(violations).anyMatch(v -> v.getMessage().contains("필수입니다") || v.getMessage().contains("공백일 수 없습니다"));
         }
 
         @Test
