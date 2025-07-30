@@ -103,7 +103,8 @@ public class SecurityConfig {
                 userInfo -> userInfo.userService(customOAuth2UserService))
             .successHandler(oAuth2LoginSuccessHandler))
         .authorizeHttpRequests(authorize -> authorize
-            .requestMatchers("/api/auth/**", "/api/public/**", "/oauth2/**", "/login/**")
+            .requestMatchers("/api/auth/refresh", "/api/auth/login", "/api/auth/signup", "/api/public/**", "/oauth2/**",
+                "/login/**")
             .permitAll()
             // 공개 조회 API 허용 (비로그인 사용자도 접근 가능)
             .requestMatchers(HttpMethod.GET, "/api/threads/**").permitAll()
@@ -139,7 +140,8 @@ public class SecurityConfig {
                 userInfo -> userInfo.userService(customOAuth2UserService))
             .successHandler(oAuth2LoginSuccessHandler))
         .authorizeHttpRequests(authorize -> authorize
-            .requestMatchers("/api/auth/**", "/api/public/**", "/oauth2/**", "/login/**")
+            .requestMatchers("/api/auth/refresh", "/api/auth/login", "/api/auth/signup", "/api/public/**", "/oauth2/**",
+                "/login/**")
             .permitAll()
             .requestMatchers("/api/admin/**").hasRole("ADMIN")
             // 공개 조회 API 허용 (비로그인 사용자도 접근 가능)
