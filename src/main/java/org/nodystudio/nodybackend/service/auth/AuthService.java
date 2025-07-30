@@ -143,6 +143,21 @@ public class AuthService {
   }
 
   /**
+   * 사용자를 로그아웃하고 Refresh Token을 무효화합니다.
+   *
+   * @param user 로그아웃할 사용자
+   */
+  @Transactional
+  public void logout(User user) {
+    log.debug("사용자 ID: {}의 로그아웃 요청 처리 시작", user.getId());
+
+    user.clearRefreshToken();
+    userRepository.save(user);
+
+    log.info("사용자 ID: {}의 로그아웃 완료 - Refresh Token 무효화됨", user.getId());
+  }
+
+  /**
    * 새로운 Access Token과 Refresh Token을 생성하고 사용자 정보를 업데이트합니다.
    */
   private TokenPair rotateTokens(User user) {
