@@ -42,8 +42,7 @@ out/
 
 ### Application Config ###
 # Sensitive configuration files
-/src/main/resources/application-dev.yaml
-/src/main/resources/application-prod.yaml
+/src/main/resources/application-*.yaml
 
 ### Logs ###
 logs
