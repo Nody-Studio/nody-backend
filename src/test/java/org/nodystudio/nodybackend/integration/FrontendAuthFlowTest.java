@@ -1,6 +1,7 @@
 package org.nodystudio.nodybackend.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -21,7 +22,9 @@ import org.nodystudio.nodybackend.domain.user.User;
 import org.nodystudio.nodybackend.dto.TokenRefreshRequestDto;
 import org.nodystudio.nodybackend.repository.UserRepository;
 import org.nodystudio.nodybackend.security.jwt.TokenProvider;
+import org.nodystudio.nodybackend.security.userdetails.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -70,7 +73,8 @@ class FrontendAuthFlowTest extends BaseIntegrationTest {
   /**
    * 시나리오 1: 프론트엔드에서 "구글로 로그인" 버튼 클릭
    * <p>
-   * 프론트엔드에서는 사용자를 '/oauth2/authorization/google'로 리다이렉트시켜야 합니다. 이는 OAuth2 인증 과정을 시작하는 표준적인 방법입니다.
+   * 프론트엔드에서는 사용자를 '/oauth2/authorization/google'로 리다이렉트시켜야 합니다. 이는 OAuth2 인증 과정을
+   * 시작하는 표준적인 방법입니다.
    */
   @Test
   @DisplayName("1. 구글 로그인 시작 - OAuth2 인증 서버로 리다이렉트")
@@ -110,8 +114,8 @@ class FrontendAuthFlowTest extends BaseIntegrationTest {
 
     // when: 프론트엔드에서 토큰 갱신 요청
     MvcResult result = mockMvc.perform(post("/api/auth/refresh")
-            .contentType("application/json")
-            .content(objectMapper.writeValueAsString(request)))
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(request)))
         .andDo(print())
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value(200))
@@ -139,7 +143,8 @@ class FrontendAuthFlowTest extends BaseIntegrationTest {
   /**
    * 시나리오 3: 잘못된 토큰 처리
    * <p>
-   * 프론트엔드에서 잘못된 refresh token을 보냈을 때의 에러 처리입니다. 이런 경우 사용자를 다시 로그인 페이지로 리다이렉트해야 합니다.
+   * 프론트엔드에서 잘못된 refresh token을 보냈을 때의 에러 처리입니다. 이런 경우 사용자를 다시 로그인 페이지로 리다이렉트해야
+   * 합니다.
    */
   @Test
   @DisplayName("3. 잘못된 토큰 - 적절한 에러 응답으로 재로그인 유도")
@@ -149,8 +154,8 @@ class FrontendAuthFlowTest extends BaseIntegrationTest {
 
     // when: 잘못된 토큰으로 갱신 시도
     MvcResult result = mockMvc.perform(post("/api/auth/refresh")
-            .contentType("application/json")
-            .content(objectMapper.writeValueAsString(request)))
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(request)))
         .andDo(print())
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.status").value(401))
@@ -188,14 +193,14 @@ class FrontendAuthFlowTest extends BaseIntegrationTest {
 
     // when: 첫 번째 갱신 성공
     mockMvc.perform(post("/api/auth/refresh")
-            .contentType("application/json")
-            .content(objectMapper.writeValueAsString(request)))
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
 
     // then: 같은 토큰으로 두 번째 시도 시 차단
     mockMvc.perform(post("/api/auth/refresh")
-            .contentType("application/json")
-            .content(objectMapper.writeValueAsString(request)))
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.code").value("A005"));
   }
@@ -221,8 +226,8 @@ class FrontendAuthFlowTest extends BaseIntegrationTest {
       TokenRefreshRequestDto request = new TokenRefreshRequestDto(currentRefreshToken);
 
       MvcResult result = mockMvc.perform(post("/api/auth/refresh")
-              .contentType("application/json")
-              .content(objectMapper.writeValueAsString(request)))
+          .contentType("application/json")
+          .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
           .andReturn();
 
@@ -237,5 +242,63 @@ class FrontendAuthFlowTest extends BaseIntegrationTest {
 
       currentRefreshToken = newRefreshToken;
     }
+  }
+
+  /**
+   * 시나리오 5: 로그아웃
+   * <p>
+   * 프론트엔드에서 사용자가 로그아웃할 때 서버에서 refresh token을 무효화하는 과정입니다.
+   */
+  @Test
+  @DisplayName("5. 로그아웃 - Refresh Token 무효화 및 성공 응답")
+  void logout_shouldInvalidateRefreshTokenAndReturnSuccess() throws Exception {
+    // given: 로그인된 사용자와 유효한 refresh token
+    User savedUser = userRepository.saveAndFlush(testUser);
+    String refreshToken = tokenProvider.createRefreshToken(savedUser);
+    LocalDateTime expiry = tokenProvider.getRefreshTokenExpiry();
+
+    savedUser.updateRefreshToken(refreshToken, expiry);
+    userRepository.saveAndFlush(savedUser);
+
+    // 인증 정보 생성
+    CustomUserDetails userDetails = new CustomUserDetails(savedUser);
+    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+        userDetails, null, userDetails.getAuthorities());
+
+    // when: 프론트엔드에서 로그아웃 요청
+    mockMvc.perform(post("/api/auth/logout")
+        .with(authentication(authentication))
+        .contentType("application/json"))
+        .andDo(print())
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value(200))
+        .andExpect(jsonPath("$.code").value("AUTH_S002"))
+        .andExpect(jsonPath("$.message").value("로그아웃에 성공했습니다."))
+        .andExpect(jsonPath("$.data").doesNotExist());
+
+    // then: 사용자의 refresh token이 무효화되었는지 확인
+    User updatedUser = userRepository.findById(savedUser.getId()).orElseThrow();
+    assertThat(updatedUser.getRefreshToken()).isNull();
+    assertThat(updatedUser.getRefreshTokenExpiry()).isNull();
+
+    // 무효화된 토큰으로 갱신 시도 시 실패하는지 확인
+    TokenRefreshRequestDto request = new TokenRefreshRequestDto(refreshToken);
+    mockMvc.perform(post("/api/auth/refresh")
+        .contentType("application/json")
+        .content(objectMapper.writeValueAsString(request)))
+        .andDo(print())
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("A005"));
+  }
+
+  @Test
+  @DisplayName("6. 인증되지 않은 사용자 로그아웃 시도 - 401 Unauthorized")
+  void logout_shouldReturnUnauthorized_whenNotAuthenticated() throws Exception {
+    // when: 인증되지 않은 상태에서 로그아웃 시도
+    mockMvc.perform(post("/api/auth/logout")
+        .contentType("application/json"))
+        .andDo(print())
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("A007"));
   }
 }

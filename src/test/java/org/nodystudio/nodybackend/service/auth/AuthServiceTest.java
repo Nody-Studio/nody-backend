@@ -92,10 +92,9 @@ class AuthServiceTest {
 
       // verify
       then(userRepository).should(times(1))
-          .save(argThat(savedUser ->
-              savedUser.getId().equals(testUser.getId()) &&
-                  savedUser.getRefreshToken().equals(newRefreshToken) &&
-                  savedUser.getRefreshTokenExpiry().equals(validExpiry)));
+          .save(argThat(savedUser -> savedUser.getId().equals(testUser.getId()) &&
+              savedUser.getRefreshToken().equals(newRefreshToken) &&
+              savedUser.getRefreshTokenExpiry().equals(validExpiry)));
     }
 
     @Test
@@ -169,11 +168,9 @@ class AuthServiceTest {
 
       // verify
       then(userRepository).should(times(1))
-          .save(argThat(user ->
-              user.getId().equals(testUser.getId()) &&
-                  user.getRefreshToken() == null &&
-                  user.getRefreshTokenExpiry() == null
-          ));
+          .save(argThat(user -> user.getId().equals(testUser.getId()) &&
+              user.getRefreshToken() == null &&
+              user.getRefreshTokenExpiry() == null));
     }
 
     @Test
@@ -194,10 +191,53 @@ class AuthServiceTest {
 
       // verify: DB 토큰이 null로 업데이트되었는지 확인
       then(userRepository).should(times(1))
-          .save(argThat(savedUser ->
-              savedUser.getId().equals(testUser.getId()) &&
-                  savedUser.getRefreshToken() == null &&
-                  savedUser.getRefreshTokenExpiry() == null));
+          .save(argThat(savedUser -> savedUser.getId().equals(testUser.getId()) &&
+              savedUser.getRefreshToken() == null &&
+              savedUser.getRefreshTokenExpiry() == null));
+    }
+  }
+
+  @Nested
+  @DisplayName("로그아웃 테스트")
+  class LogoutTest {
+
+    @Test
+    @DisplayName("로그아웃 성공 - 사용자의 Refresh Token을 무효화한다")
+    void logout_shouldClearRefreshToken_whenUserIsValid() {
+      // given
+      testUser.updateRefreshToken(validRefreshToken, validExpiry);
+
+      // when
+      authService.logout(testUser);
+
+      // then
+      assertThat(testUser.getRefreshToken()).isNull();
+      assertThat(testUser.getRefreshTokenExpiry()).isNull();
+
+      // verify: 사용자 정보가 저장되었는지 확인
+      then(userRepository).should(times(1))
+          .save(argThat(savedUser -> savedUser.getId().equals(testUser.getId()) &&
+              savedUser.getRefreshToken() == null &&
+              savedUser.getRefreshTokenExpiry() == null));
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공 - 이미 토큰이 없는 사용자도 정상 처리된다")
+    void logout_shouldHandleGracefully_whenUserHasNoToken() {
+      // given - testUser는 이미 토큰이 없는 상태
+
+      // when
+      authService.logout(testUser);
+
+      // then
+      assertThat(testUser.getRefreshToken()).isNull();
+      assertThat(testUser.getRefreshTokenExpiry()).isNull();
+
+      // verify: 사용자 정보가 저장되었는지 확인
+      then(userRepository).should(times(1))
+          .save(argThat(savedUser -> savedUser.getId().equals(testUser.getId()) &&
+              savedUser.getRefreshToken() == null &&
+              savedUser.getRefreshTokenExpiry() == null));
     }
   }
 }
