@@ -1,5 +1,6 @@
 package org.nodystudio.nodybackend.controller.auth;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.nodystudio.nodybackend.controller.auth.docs.AuthApiDocs;
@@ -48,16 +49,20 @@ public class AuthController implements AuthApiDocs {
    * 로그아웃 현재 로그인한 사용자를 로그아웃하고 Refresh Token을 무효화합니다.
    *
    * @param userDetails 현재 인증된 사용자 정보
+   * @param response    HTTP 응답 객체
    * @return 로그아웃 응답
    */
   @Override
   @PostMapping(value = "/logout")
   public ResponseEntity<ApiResponse<Void>> logout(
-      @AuthenticationPrincipal CustomUserDetails userDetails) {
+      @AuthenticationPrincipal CustomUserDetails userDetails,
+      HttpServletResponse response) {
     if (userDetails == null || userDetails.getUser() == null) {
       throw new UnauthorizedException(ErrorCode.USER_NOT_AUTHENTICATED);
     }
-    authService.logout(userDetails.getUser());
+
+    authService.logout(userDetails.getUser(), response);
+
     return ResponseEntity
         .status(SuccessCode.LOGOUT_SUCCESS.getStatus())
         .body(ApiResponse.success(SuccessCode.LOGOUT_SUCCESS, null));
