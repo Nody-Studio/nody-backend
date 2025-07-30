@@ -74,6 +74,33 @@ public class CookieUtils {
     }
   }
 
+  /**
+   * 인증 관련 쿠키들을 삭제합니다. (Access Token, Refresh Token)
+   *
+   * @param response 응답 객체
+   * @param sameSite 쿠키의 SameSite 속성 (Strict, Lax, None)
+   */
+  public static void deleteAuthCookies(HttpServletResponse response, String sameSite) {
+    ResponseCookie removeAccessTokenCookie = ResponseCookie.from("access_token", "")
+        .httpOnly(true)
+        .secure(true)
+        .path("/")
+        .maxAge(0)
+        .sameSite(sameSite)
+        .build();
+
+    ResponseCookie removeRefreshTokenCookie = ResponseCookie.from("refresh_token", "")
+        .httpOnly(true)
+        .secure(true)
+        .path("/")
+        .maxAge(0)
+        .sameSite(sameSite)
+        .build();
+
+    response.addHeader("Set-Cookie", removeAccessTokenCookie.toString());
+    response.addHeader("Set-Cookie", removeRefreshTokenCookie.toString());
+  }
+
   public static String serialize(Object object) {
     try {
       return Base64.getUrlEncoder().encodeToString(objectMapper.writeValueAsBytes(object));
