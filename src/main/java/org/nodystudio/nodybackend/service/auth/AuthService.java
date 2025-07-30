@@ -1,5 +1,6 @@
 package org.nodystudio.nodybackend.service.auth;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,8 @@ import org.nodystudio.nodybackend.exception.custom.InvalidRefreshTokenException;
 import org.nodystudio.nodybackend.exception.custom.InvalidTokenException;
 import org.nodystudio.nodybackend.repository.UserRepository;
 import org.nodystudio.nodybackend.security.jwt.TokenProvider;
+import org.nodystudio.nodybackend.util.CookieUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +31,9 @@ public class AuthService {
 
   private final UserRepository userRepository;
   private final TokenProvider tokenProvider;
+
+  @Value("${oauth2.cookie.same-site:Strict}")
+  private String cookieSameSite;
 
   /**
    * Refresh Token을 사용하여 새로운 Access Token과 Refresh Token을 발급합니다. (Rotation 적용)
@@ -155,6 +161,26 @@ public class AuthService {
     userRepository.save(user);
 
     log.info("사용자 ID: {}의 로그아웃 완료 - Refresh Token 무효화됨", user.getId());
+  }
+
+  /**
+   * 사용자를 로그아웃하고 Refresh Token을 무효화하며, HTTP 쿠키도 삭제합니다.
+   *
+   * @param user     로그아웃할 사용자
+   * @param response HTTP 응답 객체 (쿠키 삭제용)
+   */
+  @Transactional
+  public void logout(User user, HttpServletResponse response) {
+    log.debug("사용자 ID: {}의 완전한 로그아웃 요청 처리 시작", user.getId());
+
+    // 1. DB에서 Refresh Token 무효화
+    user.clearRefreshToken();
+    userRepository.save(user);
+
+    // 2. HTTP 쿠키 삭제
+    CookieUtils.deleteAuthCookies(response, cookieSameSite);
+
+    log.info("사용자 ID: {}의 완전한 로그아웃 완료 - DB 토큰 무효화 및 HTTP 쿠키 삭제됨", user.getId());
   }
 
   /**
