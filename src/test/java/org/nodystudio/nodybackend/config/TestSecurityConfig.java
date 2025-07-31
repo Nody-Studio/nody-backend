@@ -4,6 +4,7 @@ import java.util.List;
 import org.nodystudio.nodybackend.security.filter.JwtAuthenticationFilter;
 import org.nodystudio.nodybackend.security.handler.CustomAccessDeniedHandler;
 import org.nodystudio.nodybackend.security.handler.CustomAuthenticationEntryPoint;
+import org.nodystudio.nodybackend.security.handler.OAuth2LoginFailureHandler;
 import org.nodystudio.nodybackend.security.handler.OAuth2LoginSuccessHandler;
 import org.nodystudio.nodybackend.service.auth.CustomOAuth2UserService;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,6 +33,7 @@ public class TestSecurityConfig {
   private final CustomAccessDeniedHandler customAccessDeniedHandler;
   private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
   private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+  private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
   private final CustomOAuth2UserService customOAuth2UserService;
 
   @Value("${cors.allowed-origins}")
@@ -41,11 +43,13 @@ public class TestSecurityConfig {
       CustomAccessDeniedHandler customAccessDeniedHandler,
       CustomAuthenticationEntryPoint customAuthenticationEntryPoint,
       OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+      OAuth2LoginFailureHandler oAuth2LoginFailureHandler,
       CustomOAuth2UserService customOAuth2UserService) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     this.customAccessDeniedHandler = customAccessDeniedHandler;
     this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
     this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
+    this.oAuth2LoginFailureHandler = oAuth2LoginFailureHandler;
     this.customOAuth2UserService = customOAuth2UserService;
   }
 
@@ -67,7 +71,8 @@ public class TestSecurityConfig {
         .oauth2Login(oauth2 -> oauth2
             .userInfoEndpoint(
                 userInfo -> userInfo.userService(customOAuth2UserService))
-            .successHandler(oAuth2LoginSuccessHandler))
+            .successHandler(oAuth2LoginSuccessHandler)
+            .failureHandler(oAuth2LoginFailureHandler))
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers("/api/auth/**", "/api/public/**", "/oauth2/**", "/login/oauth2/**")
             .permitAll()

@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.nodystudio.nodybackend.security.filter.JwtAuthenticationFilter;
 import org.nodystudio.nodybackend.security.handler.CustomAccessDeniedHandler;
 import org.nodystudio.nodybackend.security.handler.CustomAuthenticationEntryPoint;
+import org.nodystudio.nodybackend.security.handler.OAuth2LoginFailureHandler;
 import org.nodystudio.nodybackend.security.handler.OAuth2LoginSuccessHandler;
 import org.nodystudio.nodybackend.service.auth.CustomOAuth2UserService;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -28,6 +29,7 @@ class SecurityConfigTest {
   private CustomAccessDeniedHandler customAccessDeniedHandler;
   private CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
   private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+  private OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
   private CustomOAuth2UserService customOAuth2UserService;
 
   @BeforeEach
@@ -36,6 +38,7 @@ class SecurityConfigTest {
     customAccessDeniedHandler = mock(CustomAccessDeniedHandler.class);
     customAuthenticationEntryPoint = mock(CustomAuthenticationEntryPoint.class);
     oAuth2LoginSuccessHandler = mock(OAuth2LoginSuccessHandler.class);
+    oAuth2LoginFailureHandler = mock(OAuth2LoginFailureHandler.class);
     customOAuth2UserService = mock(CustomOAuth2UserService.class);
 
     securityConfig = new SecurityConfig(
@@ -43,6 +46,7 @@ class SecurityConfigTest {
         customAccessDeniedHandler,
         customAuthenticationEntryPoint,
         oAuth2LoginSuccessHandler,
+        oAuth2LoginFailureHandler,
         customOAuth2UserService);
   }
 
