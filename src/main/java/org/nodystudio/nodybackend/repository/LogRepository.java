@@ -189,6 +189,14 @@ public interface LogRepository extends JpaRepository<Log, Long> {
   List<Log> findDeactivatedLogsByUserId(@Param("userId") Long userId);
 
   /**
+   * 사용자별 로그를 재활성화합니다 (계정 복구 시).
+   * Soft delete 상태를 해제하여 로그를 다시 공개합니다.
+   */
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("UPDATE Log l SET l.deactivatedAt = NULL WHERE l.user.id = :userId AND l.deactivatedAt IS NOT NULL")
+  int reactivateByUserId(@Param("userId") Long userId);
+
+  /**
    * 비활성화된 사용자 로그를 완전히 삭제합니다 (물리적 삭제).
    * 탈퇴 후 30일이 지난 사용자의 로그를 데이터베이스에서 완전히 제거합니다.
    *
