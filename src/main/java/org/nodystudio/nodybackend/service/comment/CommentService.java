@@ -83,7 +83,7 @@ public class CommentService {
 
     // XSS 공격 방지를 위한 HTML sanitization
     String sanitizedContent = HtmlSanitizerUtil.sanitizeCommentContent(request.getContent());
-    
+
     // 멘션된 사용자 파싱 (원본 내용 기준)
     // Sanitizer가 멘션을 포함한 HTML을 제거할 수 있으므로, 반드시 원본 내용에서 멘션을 파싱해야 합니다.
     Set<User> mentionedUsers = parseMentionedUsers(request.getContent());
@@ -162,7 +162,7 @@ public class CommentService {
 
     // XSS 공격 방지를 위한 HTML sanitization
     String sanitizedContent = HtmlSanitizerUtil.sanitizeCommentContent(request.getContent());
-    
+
     // 멘션된 사용자 파싱 (원본 내용 기준)
     // Sanitizer가 멘션을 포함한 HTML을 제거할 수 있으므로, 반드시 원본 내용에서 멘션을 파싱해야 합니다.
     Set<User> newMentionedUsers = parseMentionedUsers(request.getContent());
