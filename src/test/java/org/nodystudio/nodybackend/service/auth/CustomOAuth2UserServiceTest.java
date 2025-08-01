@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -110,13 +111,13 @@ class CustomOAuth2UserServiceTest {
 
     given(userRepository.findByProviderAndSocialIdAndIsActiveTrue(OAuthProvider.GOOGLE,
         "google_12345")).willReturn(
-        Optional.empty());
+            Optional.empty());
     given(userRepository.findByEmailAndDeletedAtAfter(anyString(),
         any(LocalDateTime.class))).willReturn(
-        Optional.empty());
+            Optional.empty());
     given(
         userRepository.findByProviderAndSocialId(OAuthProvider.GOOGLE, "google_12345")).willReturn(
-        Optional.empty());
+            Optional.empty());
     given(userRepository.saveAndFlush(any(User.class))).willAnswer(invocation -> {
       User userToSave = invocation.getArgument(0);
 
@@ -341,18 +342,18 @@ class CustomOAuth2UserServiceTest {
         .willReturn(Optional.empty());
 
     // 탈퇴한 사용자 존재 (동일한 소셜 계정)
-    User deactivatedUser = User.builder()
-        .id(5L)
+    User anotherDeactivatedUser = User.builder()
+        .id(7L)
         .provider(OAuthProvider.GOOGLE)
         .socialId("google_12345") // 동일한 소셜 ID
         .email("test@example.com") // 동일한 이메일
         .nickname("Old Name")
         .isActive(false)
         .build();
-    deactivatedUser.deactivateAccount();
+    anotherDeactivatedUser.deactivateAccount();
 
     given(userRepository.findByProviderAndSocialId(OAuthProvider.GOOGLE, "google_12345"))
-        .willReturn(Optional.of(deactivatedUser));
+        .willReturn(Optional.of(anotherDeactivatedUser));
 
     // when
     OAuth2User resultUser = customOAuth2UserService.loadUser(userRequest);
@@ -363,16 +364,63 @@ class CustomOAuth2UserServiceTest {
         .findByEmailAndDeletedAtAfter(anyString(), any(LocalDateTime.class));
 
     // 계정이 재활성화되었는지 확인
-    assertThat(deactivatedUser.getIsActive()).isTrue();
-    assertThat(deactivatedUser.getDeletedAt()).isNull();
-    assertThat(deactivatedUser.getNickname()).isEqualTo("Old Name"); // 기존 닉네임 유지
-    assertThat(deactivatedUser.getEmail()).isEqualTo("test@example.com"); // 기존 이메일 유지
+    assertThat(anotherDeactivatedUser.getIsActive()).isTrue();
+    assertThat(anotherDeactivatedUser.getDeletedAt()).isNull();
+    assertThat(anotherDeactivatedUser.getNickname()).isEqualTo("Old Name"); // 기존 닉네임 유지
+    assertThat(anotherDeactivatedUser.getEmail()).isEqualTo("test@example.com"); // 기존 이메일 유지
 
     // 데이터 재활성화 확인 (UserService 통해)
-    then(userService).should(times(1)).reactivateUserGeneratedData(deactivatedUser);
+    then(userService).should(times(1)).reactivateUserGeneratedData(anotherDeactivatedUser);
 
     assertThat(resultUser).isNotNull();
     assertThat(resultUser.getAuthorities()).extracting(GrantedAuthority::getAuthority)
         .containsExactly("ROLE_USER");
   }
+
+  @Test
+  @DisplayName("데이터 재활성화 실패 시 로그인 실패")
+  void loadUser_shouldFailLogin_whenDataReactivationFails() {
+    // given
+    given(clientRegistration.getProviderDetails()).willReturn(providerDetails);
+    given(providerDetails.getUserInfoEndpoint()).willReturn(userInfoEndpoint);
+    given(userInfoEndpoint.getUserNameAttributeName()).willReturn(userNameAttributeName);
+    given(mockDelegate.loadUser(userRequest)).willReturn(mockOAuth2User);
+    given(mockOAuth2User.getAttributes()).willReturn(googleAttributes);
+
+    // 활성 사용자 없음
+    given(userRepository.findByProviderAndSocialIdAndIsActiveTrue(OAuthProvider.GOOGLE,
+        "google_12345"))
+        .willReturn(Optional.empty());
+
+    // 탈퇴한 사용자 존재
+    User deactivatedUser = User.builder()
+        .id(6L)
+        .provider(OAuthProvider.GOOGLE)
+        .socialId("google_12345")
+        .email("test@example.com")
+        .nickname("Test User")
+        .isActive(false)
+        .build();
+    deactivatedUser.deactivateAccount();
+
+    given(userRepository.findByProviderAndSocialId(OAuthProvider.GOOGLE, "google_12345"))
+        .willReturn(Optional.of(deactivatedUser));
+
+    // 데이터 재활성화 실패 설정
+    doThrow(new RuntimeException("데이터베이스 연결 실패"))
+        .when(userService).reactivateUserGeneratedData(deactivatedUser);
+
+    // when & then
+    assertThatThrownBy(() -> customOAuth2UserService.loadUser(userRequest))
+        .isInstanceOf(OAuth2AuthenticationException.class)
+        .satisfies(exception -> {
+          OAuth2AuthenticationException oauthException = (OAuth2AuthenticationException) exception;
+          assertThat(oauthException.getError().getErrorCode()).isEqualTo("data_reactivation_failed");
+          assertThat(oauthException.getError().getDescription())
+              .isEqualTo("탈퇴한 계정의 데이터를 복구하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+          assertThat(oauthException.getCause()).isInstanceOf(RuntimeException.class);
+          assertThat(oauthException.getCause().getMessage()).isEqualTo("데이터베이스 연결 실패");
+        });
+  }
+
 }
