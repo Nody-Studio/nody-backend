@@ -1,7 +1,7 @@
 package org.nodystudio.nodybackend.repository;
 
-import jakarta.persistence.LockModeType;
 import java.util.Optional;
+
 import org.nodystudio.nodybackend.domain.like.LogLike;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import jakarta.persistence.LockModeType;
 
 /**
  * 로그 좋아요 데이터 접근을 위한 Repository
