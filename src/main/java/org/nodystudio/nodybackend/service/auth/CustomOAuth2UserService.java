@@ -153,13 +153,26 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
   /**
    * 사용자 생성 데이터를 재활성화합니다.
+   * 데이터 재활성화 실패 시 로그인도 실패합니다.
    *
    * @param user 재활성화할 사용자
+   * @throws OAuth2AuthenticationException 데이터 재활성화 실패 시
    */
   private void reactivateUserGeneratedData(User user) {
     log.debug("사용자 생성 데이터 재활성화 시작: userId={}", LoggingUtils.maskUserId(user.getId()));
 
-    userService.reactivateUserGeneratedData(user);
+    try {
+      userService.reactivateUserGeneratedData(user);
+    } catch (Exception e) {
+      log.error("사용자 데이터 재활성화 실패: userId={}, error={}", 
+          LoggingUtils.maskUserId(user.getId()), e.getMessage(), e);
+      
+      // OAuth2AuthenticationException을 던져서 로그인 실패 처리
+      OAuth2Error oauth2Error = new OAuth2Error("data_reactivation_failed",
+          "탈퇴한 계정의 데이터를 복구하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+          null);
+      throw new OAuth2AuthenticationException(oauth2Error, e);
+    }
   }
 
   /**
