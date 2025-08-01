@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.domain.user.User;
 import org.nodystudio.nodybackend.dto.OAuthAttributes;
 import org.nodystudio.nodybackend.repository.UserRepository;
+import org.nodystudio.nodybackend.service.user.UserService;
 import org.nodystudio.nodybackend.util.LoggingUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -25,16 +26,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
   private final UserRepository userRepository;
+  private final UserService userService;
   private final OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate;
 
   @Autowired
-  public CustomOAuth2UserService(UserRepository userRepository) {
-    this(userRepository, new DefaultOAuth2UserService());
+  public CustomOAuth2UserService(UserRepository userRepository, UserService userService) {
+    this(userRepository, userService, new DefaultOAuth2UserService());
   }
 
-  public CustomOAuth2UserService(UserRepository userRepository,
+  public CustomOAuth2UserService(UserRepository userRepository, UserService userService,
       OAuth2UserService<OAuth2UserRequest, OAuth2User> delegate) {
     this.userRepository = userRepository;
+    this.userService = userService;
     this.delegate = delegate;
   }
 
@@ -113,15 +116,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
           LoggingUtils.maskEmail(attributes.getEmail()),
           LoggingUtils.maskNickname(attributes.getName()));
     } else {
-      // 2. 새 사용자 등록 전 재가입 제한 검증
-      validateReRegistration(attributes.getEmail());
-
-      // 3. 탈퇴한 사용자가 있는지 확인 (소셜 ID 기준)
+      // 2. 탈퇴한 사용자가 있는지 먼저 확인 (소셜 ID 기준)
       Optional<User> deactivatedUserOptional = userRepository.findByProviderAndSocialId(
           attributes.getProvider(), attributes.getProviderId());
 
       if (deactivatedUserOptional.isPresent()) {
-        // 탈퇴한 사용자 계정 재활성화
+        // 기존 탈퇴한 사용자 계정 재활성화 (제한 없음)
         user = deactivatedUserOptional.get();
         log.info("탈퇴한 계정 재활성화: provider={}, socialId={}, userId={}",
             attributes.getProvider(),
@@ -131,7 +131,13 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             LoggingUtils.maskNickname(user.getNickname()),
             LoggingUtils.maskNickname(attributes.getName()));
         user.reactivateAccount();
+
+        // 사용자 생성 데이터도 재활성화 (UserService 참조)
+        reactivateUserGeneratedData(user);
       } else {
+        // 3. 완전히 새로운 사용자 등록 전에만 재가입 제한 검증
+        validateReRegistration(attributes.getEmail());
+
         // 완전히 새로운 사용자 등록
         user = attributes.toEntity();
         user = userRepository.saveAndFlush(user);
@@ -143,6 +149,17 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
       }
     }
     return user;
+  }
+
+  /**
+   * 사용자 생성 데이터를 재활성화합니다.
+   *
+   * @param user 재활성화할 사용자
+   */
+  private void reactivateUserGeneratedData(User user) {
+    log.debug("사용자 생성 데이터 재활성화 시작: userId={}", LoggingUtils.maskUserId(user.getId()));
+
+    userService.reactivateUserGeneratedData(user);
   }
 
   /**
