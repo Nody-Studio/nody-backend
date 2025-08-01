@@ -28,7 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 사용자의 위치 기반 로그 관리 서비스
  *
  * <p>
- * 지리적 위치 정보를 활용한 로그 생성, 조회, 검색 기능을 제공합니다. 사용자 권한에 따라 공개/비공개 로그에 대한 접근을 제어하며, Haversine 공식을 사용한 반경
+ * 지리적 위치 정보를 활용한 로그 생성, 조회, 검색 기능을 제공합니다. 사용자 권한에 따라 공개/비공개 로그에 대한 접근을 제어하며,
+ * Haversine 공식을 사용한 반경
  * 기반 검색을 지원합니다.
  * </p>
  */
@@ -66,8 +67,8 @@ public class LogService {
     }
 
     // XSS 공격 방지를 위한 HTML sanitization
-    String sanitizedContent = request.getContent() != null 
-        ? HtmlSanitizerUtil.sanitize(request.getContent()) 
+    String sanitizedContent = request.getContent() != null
+        ? HtmlSanitizerUtil.sanitize(request.getContent())
         : null;
 
     LocationUtils.validateCoordinates(request.getLatitude(), request.getLongitude());
@@ -120,7 +121,8 @@ public class LogService {
    * 위치 기반 로그를 검색합니다.
    *
    * <p>
-   * 위치 정보가 제공된 경우 지정된 반경 내의 로그를 검색하고, 위치 정보가 없는 경우 전체 로그를 조회합니다. 사용자 권한에 따라 공개/비공개 로그 접근을 제어합니다.
+   * 위치 정보가 제공된 경우 지정된 반경 내의 로그를 검색하고, 위치 정보가 없는 경우 전체 로그를 조회합니다. 사용자 권한에 따라
+   * 공개/비공개 로그 접근을 제어합니다.
    * </p>
    *
    * @param searchRequest 검색 조건 (위치, 반경, 페이징 정보)
@@ -393,13 +395,11 @@ public class LogService {
   public int reactivateLogsByUserId(Long userId) {
     log.debug("사용자 로그 재활성화 시작: userId={}", LoggingUtils.maskUserId(userId));
 
-    List<Log> deactivatedLogs = logRepository.findDeactivatedLogsByUserId(userId);
-    deactivatedLogs.forEach(Log::reactivate);
-    logRepository.saveAll(deactivatedLogs);
+    int reactivatedCount = logRepository.reactivateByUserId(userId);
 
     log.debug("사용자 로그 재활성화 완료: userId={}, count={}",
-        LoggingUtils.maskUserId(userId), deactivatedLogs.size());
+        LoggingUtils.maskUserId(userId), reactivatedCount);
 
-    return deactivatedLogs.size();
+    return reactivatedCount;
   }
 }

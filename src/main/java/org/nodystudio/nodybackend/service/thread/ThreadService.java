@@ -28,7 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 스레드 관리 서비스
  *
  * <p>
- * 로그 연결 스레드와 독립 스레드의 생성, 조회, 수정, 삭제 기능을 제공합니다. 사용자 권한에 따라 공개/비공개 스레드에 대한 접근을 제어하며, 로그-스레드 연관관계 검증을
+ * 로그 연결 스레드와 독립 스레드의 생성, 조회, 수정, 삭제 기능을 제공합니다. 사용자 권한에 따라 공개/비공개 스레드에 대한 접근을
+ * 제어하며, 로그-스레드 연관관계 검증을
  * 수행합니다.
  * </p>
  */
@@ -66,8 +67,8 @@ public class ThreadService {
     }
 
     // XSS 공격 방지를 위한 HTML sanitization
-    String sanitizedContent = request.getContent() != null 
-        ? HtmlSanitizerUtil.sanitize(request.getContent().trim()) 
+    String sanitizedContent = request.getContent() != null
+        ? HtmlSanitizerUtil.sanitize(request.getContent().trim())
         : null;
 
     Thread thread = Thread.builder()
@@ -236,14 +237,13 @@ public class ThreadService {
     return log;
   }
 
-
   private Page<Thread> performSearch(ThreadSearchRequest searchRequest, User viewer,
       Pageable pageable) {
     // 키워드 검색이 있는 경우
     if (searchRequest.getKeyword() != null && !searchRequest.getKeyword().trim().isEmpty()) {
       return viewer != null
           ? threadRepository.searchThreadsByContentWithUser(searchRequest.getKeyword(),
-          viewer.getId(), pageable)
+              viewer.getId(), pageable)
           : threadRepository.searchPublicThreadsByContent(searchRequest.getKeyword(), pageable);
     }
 
@@ -251,7 +251,7 @@ public class ThreadService {
     if (searchRequest.getLogId() != null) {
       return viewer != null
           ? threadRepository.findThreadsByLogIdWithUser(searchRequest.getLogId(), viewer.getId(),
-          pageable)
+              pageable)
           : threadRepository.findPublicThreadsByLogIdOrderByCreatedAtDesc(searchRequest.getLogId(),
               pageable);
     }
@@ -325,13 +325,11 @@ public class ThreadService {
   public int reactivateThreadsByUserId(Long userId) {
     log.debug("사용자 스레드 재활성화 시작: userId={}", LoggingUtils.maskUserId(userId));
 
-    List<Thread> deactivatedThreads = threadRepository.findDeactivatedThreadsByUserId(userId);
-    deactivatedThreads.forEach(Thread::reactivate);
-    threadRepository.saveAll(deactivatedThreads);
+    int reactivatedCount = threadRepository.reactivateByUserId(userId);
 
     log.debug("사용자 스레드 재활성화 완료: userId={}, count={}",
-        LoggingUtils.maskUserId(userId), deactivatedThreads.size());
+        LoggingUtils.maskUserId(userId), reactivatedCount);
 
-    return deactivatedThreads.size();
+    return reactivatedCount;
   }
 }
