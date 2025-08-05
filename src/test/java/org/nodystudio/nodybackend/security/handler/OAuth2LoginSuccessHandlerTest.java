@@ -104,6 +104,7 @@ class OAuth2LoginSuccessHandlerTest {
         "http://localhost:3000,https://localhost:3000");
     ReflectionTestUtils.setField(successHandler, "cookieDomain", "localhost");
     ReflectionTestUtils.setField(successHandler, "cookieSameSite", "Strict");
+    ReflectionTestUtils.setField(successHandler, "cookieSecure", true);
 
     given(clientRegistrationRepository.findByRegistrationId(
         OAuthProvider.GOOGLE.getValue())).willReturn(
@@ -208,6 +209,7 @@ class OAuth2LoginSuccessHandlerTest {
     // 유효하지 않은 리다이렉트 URL 설정
     ReflectionTestUtils.setField(successHandler, "redirectUrl",
         "http://malicious-site.com/callback");
+    ReflectionTestUtils.setField(successHandler, "cookieSecure", true);
 
     // when
     successHandler.onAuthenticationSuccess(request, response, authentication);
