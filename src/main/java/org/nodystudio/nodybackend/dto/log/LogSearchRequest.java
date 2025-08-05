@@ -1,5 +1,7 @@
 package org.nodystudio.nodybackend.dto.log;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -10,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.nodystudio.nodybackend.domain.enums.LogSortField;
 import org.nodystudio.nodybackend.domain.enums.SortDirection;
 
@@ -21,6 +24,7 @@ import org.nodystudio.nodybackend.domain.enums.SortDirection;
  * </p>
  */
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -91,6 +95,17 @@ public class LogSearchRequest {
    * 기본값: DESC
    * </p>
    */
+  @Schema(description = "정렬 방향 (ASC 또는 DESC)", defaultValue = "DESC")
   @Builder.Default
   private SortDirection sortDirection = SortDirection.DESC;
+
+  /**
+   * 위치 정보(위도, 경도)가 모두 유효한지 확인합니다.
+   *
+   * @return 위치 정보가 모두 있으면 true, 그렇지 않으면 false
+   */
+  @JsonIgnore
+  public boolean isLocationSearch() {
+    return latitude != null && longitude != null;
+  }
 }

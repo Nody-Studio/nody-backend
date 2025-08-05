@@ -136,11 +136,15 @@ public class LogService {
         searchRequest.getRadiusKm(), userEmail);
 
     User viewer = userEmail != null ? findUserByEmail(userEmail) : null;
-    Pageable pageable = createPageable(searchRequest);
 
-    Page<Log> logs = hasLocationInfo(searchRequest)
-        ? searchByLocation(searchRequest, viewer, pageable)
-        : searchAllLogs(viewer, pageable);
+    // 위치 기반 검색 시 Native Query의 ORDER BY를 사용하므로 Pageable에서 정렬 제외
+    Pageable pageable = createPageable(searchRequest, searchRequest.isLocationSearch());
+
+    Page<Log> logs = searchLogs(searchRequest, viewer, pageable, searchRequest.isLocationSearch());
+
+    logs.getContent().forEach(log -> {
+      log.getMediaUrls().size();
+    });
 
     log.info("로그 검색 완료 - 총 {}건", logs.getTotalElements());
     return logs.map(LogResponse::from);
@@ -197,11 +201,24 @@ public class LogService {
   }
 
   /**
-   * 검색 조건에 따라 페이징 객체를 생성합니다.
+   * 검색 조건에 따라 페이징(Paging) 및 정렬(Sort) 설정을 담은 {@link Pageable} 객체를 생성합니다.
+   *
+   * <p>
+   * 이 메서드는 위치 기반 검색 여부에 따라 정렬 객체의 포함 여부를 동적으로 결정합니다.
+   * 위치 검색 시에는 거리순 정렬이 데이터베이스의 네이티브 쿼리에서 직접 처리되므로,
+   * {@code Pageable} 객체에는 별도의 정렬 정보를 포함하지 않습니다.
+   * 그 외의 경우에는 요청된 정렬 기준을 적용합니다.
+   * </p>
+   *
+   * @param searchRequest    페이징 및 정렬 정보가 포함된 검색 요청 객체
+   * @param isLocationSearch 위치 기반 검색 여부를 나타내는 플래그
+   * @return 생성된 {@code Pageable} 객체
    */
-  private Pageable createPageable(LogSearchRequest searchRequest) {
+  private Pageable createPageable(LogSearchRequest searchRequest, boolean isLocationSearch) {
     Sort sort = createSort(searchRequest.getSortBy(), searchRequest.getSortDirection());
-    return PageRequest.of(searchRequest.getPage(), searchRequest.getSize(), sort);
+    return isLocationSearch
+        ? PageRequest.of(searchRequest.getPage(), searchRequest.getSize())
+        : PageRequest.of(searchRequest.getPage(), searchRequest.getSize(), sort);
   }
 
   /**
@@ -254,13 +271,6 @@ public class LogService {
   }
 
   /**
-   * 검색 요청에 위치 정보가 포함되어 있는지 확인합니다.
-   */
-  private boolean hasLocationInfo(LogSearchRequest searchRequest) {
-    return searchRequest.getLatitude() != null && searchRequest.getLongitude() != null;
-  }
-
-  /**
    * 거리 정렬 방향을 결정합니다.
    */
   private String getDistanceSortDirection(LogSearchRequest searchRequest) {
@@ -300,9 +310,36 @@ public class LogService {
   }
 
   /**
-   * 전체 로그 검색을 수행합니다. 사용자 권한에 따라 조회 범위를 제한합니다.
+   * 검색 조건에 따라 로그를 조회하는 내부 헬퍼 메서드입니다.
+   *
+   * <p>
+   * 위치 기반 검색과 전체 검색을 분기하여 처리합니다.
+   * <ul>
+   * <li><b>위치 기반 검색 (isLocationSearch = true):</b> {@link #searchByLocation} 메서드를
+   * 호출하여 반경 내 로그를 검색합니다.</li>
+   * <li><b>전체 검색 (isLocationSearch = false):</b>
+   * <ul>
+   * <li><b>로그인 사용자 (viewer != null):</b> 모든 공개 로그와 사용자 자신의 비공개 로그을 조회합니다.</li>
+   * <li><b>비로그인 사용자 (viewer == null):</b> 모든 공개 로그만 조회합니다.</li>
+   * </ul>
+   * </li>
+   * </ul>
+   * </p>
+   *
+   * @param searchRequest    검색 조건이 담긴 요청 객체
+   * @param viewer           조회하는 사용자 정보 (null일 경우 비로그인 사용자)
+   * @param pageable         페이징 및 정렬 정보
+   * @param isLocationSearch 위치 기반 검색 여부 플래그
+   * @return 검색 조건에 맞는 페이징 처리된 로그 목록
    */
-  private Page<Log> searchAllLogs(User viewer, Pageable pageable) {
+  private Page<Log> searchLogs(LogSearchRequest searchRequest, User viewer, Pageable pageable,
+      boolean isLocationSearch) {
+
+    if (isLocationSearch) {
+      return searchByLocation(searchRequest, viewer, pageable);
+    }
+
+    // 전체 로그 검색
     if (viewer != null) {
       // 로그인 사용자: 공개 로그 + 본인 비공개 로그
       return logRepository.findPublicOrUserLogsOrderByCreatedAtDesc(viewer.getId(), pageable);
