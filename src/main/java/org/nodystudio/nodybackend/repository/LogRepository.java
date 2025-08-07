@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.nodystudio.nodybackend.domain.log.Log;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,7 +15,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * - findByLocationNear: 특정 좌표 반경 내 로그 조회 (Haversine 공식) - findByUserIdOrderByCreatedAtDesc: 사용자별 로그
+ * - findByLocationNear: 특정 좌표 반경 내 로그 조회 (Haversine 공식) -
+ * findByUserIdOrderByCreatedAtDesc: 사용자별 로그
  * 조회 - @Query 어노테이션으로 네이티브 쿼리 작성
  */
 @Repository
@@ -86,7 +88,7 @@ public interface LogRepository extends JpaRepository<Log, Long> {
         AND (6371 * acos(cos(radians(:latitude)) * cos(radians(l.latitude)) *
              cos(radians(l.longitude) - radians(:longitude)) +
              sin(radians(:latitude)) * sin(radians(l.latitude)))) <= :radiusKm
-      ORDER BY 
+      ORDER BY
         CASE WHEN :sortDirection = 'ASC' THEN distance END ASC,
         CASE WHEN :sortDirection = 'DESC' THEN distance END DESC,
         l.created_at DESC
@@ -110,6 +112,7 @@ public interface LogRepository extends JpaRepository<Log, Long> {
   /**
    * 특정 사용자의 위치 기반 로그 조회 (본인 비공개 로그 포함)
    */
+  @EntityGraph(attributePaths = { "mediaUrls" })
   @Query(value = """
       SELECT l.*,
              (6371 * acos(cos(radians(:latitude)) * cos(radians(l.latitude)) *
@@ -123,7 +126,7 @@ public interface LogRepository extends JpaRepository<Log, Long> {
         AND (6371 * acos(cos(radians(:latitude)) * cos(radians(l.latitude)) *
              cos(radians(l.longitude) - radians(:longitude)) +
              sin(radians(:latitude)) * sin(radians(l.latitude)))) <= :radiusKm
-      ORDER BY 
+      ORDER BY
         CASE WHEN :sortDirection = 'ASC' THEN distance END ASC,
         CASE WHEN :sortDirection = 'DESC' THEN distance END DESC,
         l.created_at DESC
@@ -166,15 +169,20 @@ public interface LogRepository extends JpaRepository<Log, Long> {
   /**
    * 공개 로그만 전체 조회 (비로그인 사용자용, 활성화된 로그만)
    */
-  @Query("SELECT l FROM Log l WHERE l.isPublic = true AND l.deactivatedAt IS NULL ORDER BY l.createdAt DESC")
+  @EntityGraph(attributePaths = { "mediaUrls" })
+  @Query(value = "SELECT l FROM Log l WHERE l.isPublic = true AND l.deactivatedAt IS NULL", countQuery = "SELECT COUNT(l) FROM Log l WHERE l.isPublic = true AND l.deactivatedAt IS NULL")
   Page<Log> findByIsPublicTrueOrderByCreatedAtDesc(Pageable pageable);
 
   /**
    * 공개 로그 + 특정 사용자의 비공개 로그 조회 (로그인 사용자용, 활성화된 로그만)
    */
-  @Query("SELECT l FROM Log l WHERE l.deactivatedAt IS NULL AND (l.isPublic = true OR l.user.id = :userId) ORDER BY l.createdAt DESC")
+  @EntityGraph(attributePaths = { "mediaUrls" })
+  @Query(value = "SELECT l FROM Log l WHERE l.deactivatedAt IS NULL AND (l.isPublic = true OR l.user.id = :userId)", countQuery = "SELECT COUNT(l) FROM Log l WHERE l.deactivatedAt IS NULL AND (l.isPublic = true OR l.user.id = :userId)")
   Page<Log> findPublicOrUserLogsOrderByCreatedAtDesc(@Param("userId") Long userId,
       Pageable pageable);
+
+  @Query("SELECT l FROM Log l JOIN FETCH l.mediaUrls WHERE l.id IN :logIds")
+  List<Log> findWithMediaUrlsByIdIn(@Param("logIds") List<Long> logIds);
 
   /**
    * 활성화된 사용자 로그를 모두 조회합니다 (비활성화 작업용).

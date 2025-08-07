@@ -1,6 +1,9 @@
 package org.nodystudio.nodybackend.service.log;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nodystudio.nodybackend.domain.enums.LogSortField;
@@ -140,11 +143,8 @@ public class LogService {
     // 위치 기반 검색 시 Native Query의 ORDER BY를 사용하므로 Pageable에서 정렬 제외
     Pageable pageable = createPageable(searchRequest, searchRequest.isLocationSearch());
 
-    Page<Log> logs = executeLogSearch(searchRequest, viewer, pageable, searchRequest.isLocationSearch());
-
-    logs.getContent().forEach(log -> {
-      log.getMediaUrls().size();
-    });
+    Page<Log> logs = executeLogSearch(searchRequest, viewer, pageable,
+        searchRequest.isLocationSearch());
 
     log.info("로그 검색 완료 - 총 {}건", logs.getTotalElements());
     return logs.map(LogResponse::from);
@@ -336,7 +336,22 @@ public class LogService {
       boolean isLocationSearch) {
 
     if (isLocationSearch) {
-      return searchByLocation(searchRequest, viewer, pageable);
+      Page<Log> logsWithoutMedia = searchByLocation(searchRequest, viewer, pageable);
+      if (logsWithoutMedia.hasContent()) {
+        List<Long> logIds = logsWithoutMedia.getContent().stream()
+            .map(Log::getId)
+            .toList();
+        List<Log> logsWithMedia = logRepository.findWithMediaUrlsByIdIn(logIds);
+        Map<Long, Log> logMap = logsWithMedia.stream()
+            .collect(toMap(Log::getId, l -> l));
+        logsWithoutMedia.getContent().forEach(log -> {
+          Log logWithMedia = logMap.get(log.getId());
+          if (logWithMedia != null) {
+            log.updateMediaUrls(logWithMedia.getMediaUrls());
+          }
+        });
+      }
+      return logsWithoutMedia;
     }
 
     // 전체 로그 검색
