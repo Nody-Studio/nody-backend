@@ -112,7 +112,6 @@ public interface LogRepository extends JpaRepository<Log, Long> {
   /**
    * 특정 사용자의 위치 기반 로그 조회 (본인 비공개 로그 포함)
    */
-  @EntityGraph(attributePaths = { "mediaUrls" })
   @Query(value = """
       SELECT l.*,
              (6371 * acos(cos(radians(:latitude)) * cos(radians(l.latitude)) *
@@ -181,7 +180,7 @@ public interface LogRepository extends JpaRepository<Log, Long> {
   Page<Log> findPublicOrUserLogsOrderByCreatedAtDesc(@Param("userId") Long userId,
       Pageable pageable);
 
-  @Query("SELECT l FROM Log l JOIN FETCH l.mediaUrls WHERE l.id IN :logIds")
+  @Query("SELECT DISTINCT l FROM Log l LEFT JOIN FETCH l.mediaUrls WHERE l.id IN :logIds")
   List<Log> findWithMediaUrlsByIdIn(@Param("logIds") List<Long> logIds);
 
   /**
