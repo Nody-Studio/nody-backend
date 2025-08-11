@@ -168,19 +168,19 @@ public interface LogRepository extends JpaRepository<Log, Long> {
   /**
    * 공개 로그만 전체 조회 (비로그인 사용자용, 활성화된 로그만)
    */
-  @EntityGraph(attributePaths = { "mediaUrls" })
+  @EntityGraph(attributePaths = { "mediaUrls", "user" })
   @Query(value = "SELECT l FROM Log l WHERE l.isPublic = true AND l.deactivatedAt IS NULL", countQuery = "SELECT COUNT(l) FROM Log l WHERE l.isPublic = true AND l.deactivatedAt IS NULL")
   Page<Log> findByIsPublicTrueOrderByCreatedAtDesc(Pageable pageable);
 
   /**
    * 공개 로그 + 특정 사용자의 비공개 로그 조회 (로그인 사용자용, 활성화된 로그만)
    */
-  @EntityGraph(attributePaths = { "mediaUrls" })
+  @EntityGraph(attributePaths = { "mediaUrls", "user" })
   @Query(value = "SELECT l FROM Log l WHERE l.deactivatedAt IS NULL AND (l.isPublic = true OR l.user.id = :userId)", countQuery = "SELECT COUNT(l) FROM Log l WHERE l.deactivatedAt IS NULL AND (l.isPublic = true OR l.user.id = :userId)")
   Page<Log> findPublicOrUserLogsOrderByCreatedAtDesc(@Param("userId") Long userId,
       Pageable pageable);
 
-  @Query("SELECT DISTINCT l FROM Log l LEFT JOIN FETCH l.mediaUrls WHERE l.id IN :logIds")
+  @Query("SELECT DISTINCT l FROM Log l JOIN FETCH l.user LEFT JOIN FETCH l.mediaUrls WHERE l.id IN :logIds")
   List<Log> findWithMediaUrlsByIdIn(@Param("logIds") List<Long> logIds);
 
   /**
