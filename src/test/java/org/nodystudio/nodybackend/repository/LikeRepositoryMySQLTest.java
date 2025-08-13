@@ -38,8 +38,7 @@ class LikeRepositoryMySQLTest {
   static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
       .withDatabaseName("testdb")
       .withUsername("test")
-      .withPassword("test")
-      .withInitScript("schema.sql");
+      .withPassword("test");
   @Autowired
   private LikeRepository likeRepository;
   @Autowired
