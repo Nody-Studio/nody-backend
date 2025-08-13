@@ -1,5 +1,17 @@
 package org.nodystudio.nodybackend.domain.log;
 
+import static java.util.stream.Collectors.toList;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.annotations.ColumnDefault;
+import org.nodystudio.nodybackend.domain.BaseTimeEntity;
+import org.nodystudio.nodybackend.domain.like.LogLike;
+import org.nodystudio.nodybackend.domain.user.User;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,19 +29,11 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnDefault;
-import org.nodystudio.nodybackend.domain.BaseTimeEntity;
-import org.nodystudio.nodybackend.domain.like.LogLike;
-import org.nodystudio.nodybackend.domain.user.User;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -142,11 +146,9 @@ public class Log extends BaseTimeEntity {
    * 미디어 URL 목록을 반환합니다. 내부적으로는 연관 엔티티를 URL 리스트로 변환합니다.
    */
   public List<String> getMediaUrls() {
-    List<String> urls = new ArrayList<>();
-    for (LogMedia media : this.mediaList) {
-      urls.add(media.getUrl());
-    }
-    return urls;
+    return this.mediaList.stream()
+        .map(LogMedia::getUrl)
+        .collect(toList());
   }
 
   /**
