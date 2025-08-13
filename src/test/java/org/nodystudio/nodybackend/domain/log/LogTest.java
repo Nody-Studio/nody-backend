@@ -46,7 +46,6 @@ class LogTest {
         .latitude(new BigDecimal("37.5665"))
         .longitude(new BigDecimal("126.9780"))
         .address("서울특별시 중구 세종대로 110")
-        .mediaUrls(new ArrayList<>())
         .isPublic(true)
         .viewCount(0L)
         .build();
@@ -101,8 +100,7 @@ class LogTest {
     // given
     List<String> newMediaUrls = List.of(
         "https://example.com/image1.jpg",
-        "https://example.com/image2.jpg"
-    );
+        "https://example.com/image2.jpg");
 
     // when
     log.updateMediaUrls(newMediaUrls);
@@ -111,15 +109,14 @@ class LogTest {
     assertThat(log.getMediaUrls()).hasSize(2);
     assertThat(log.getMediaUrls()).containsExactly(
         "https://example.com/image1.jpg",
-        "https://example.com/image2.jpg"
-    );
+        "https://example.com/image2.jpg");
   }
 
   @Test
   @DisplayName("미디어 URL null로 업데이트 시 빈 리스트로 설정")
   void updateMediaUrls_NullList_ClearsUrls() {
     // given
-    log.getMediaUrls().add("https://example.com/image.jpg");
+    log.updateMediaUrls(List.of("https://example.com/image.jpg"));
     assertThat(log.getMediaUrls()).hasSize(1);
 
     // when
