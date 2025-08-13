@@ -97,17 +97,18 @@ class LogServiceTest {
     given(userRepository.findByEmail("test@example.com")).willReturn(Optional.of(testUser));
     given(logRepository.save(any(Log.class))).willAnswer(invocation -> {
       Log log = invocation.getArgument(0);
-      return Log.builder()
+      Log saved = Log.builder()
           .id(1L)
           .user(log.getUser())
           .content(log.getContent())
           .latitude(log.getLatitude())
           .longitude(log.getLongitude())
           .address(log.getAddress())
-          .mediaUrls(log.getMediaUrls())
           .isPublic(log.getIsPublic())
           .viewCount(0L)
           .build();
+      saved.updateMediaUrls(log.getMediaUrls());
+      return saved;
     });
 
     // when
