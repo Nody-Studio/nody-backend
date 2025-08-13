@@ -82,9 +82,11 @@ public class LogService {
         .latitude(request.getLatitude())
         .longitude(request.getLongitude())
         .address(request.getAddress())
-        .mediaUrls(request.getMediaUrls())
         .isPublic(request.getIsPublic())
         .build();
+
+    // Build media entities from URLs
+    logEntity.updateMediaUrls(request.getMediaUrls());
 
     Log savedLog = logRepository.save(logEntity);
     log.info("로그 생성 완료 - ID: {}, HTML sanitization 적용됨", savedLog.getId());

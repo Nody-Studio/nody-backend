@@ -1,9 +1,19 @@
 package org.nodystudio.nodybackend.domain.log;
 
+import static java.util.stream.Collectors.toList;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hibernate.annotations.ColumnDefault;
+import org.nodystudio.nodybackend.domain.BaseTimeEntity;
+import org.nodystudio.nodybackend.domain.like.LogLike;
+import org.nodystudio.nodybackend.domain.user.User;
+
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -13,36 +23,28 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.ColumnDefault;
-import org.nodystudio.nodybackend.domain.BaseTimeEntity;
-import org.nodystudio.nodybackend.domain.like.LogLike;
-import org.nodystudio.nodybackend.domain.user.User;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "logs",
-    indexes = {@Index(name = "idx_logs_user_id", columnList = "user_id"),
-        @Index(name = "idx_logs_location", columnList = "latitude, longitude"),
-        @Index(name = "idx_logs_is_public", columnList = "is_public"),
-        @Index(name = "idx_logs_created_at", columnList = "created_at"),
-        @Index(name = "idx_logs_deactivated_at", columnList = "deactivated_at")})
+@Table(name = "logs", indexes = { @Index(name = "idx_logs_user_id", columnList = "user_id"),
+    @Index(name = "idx_logs_location", columnList = "latitude, longitude"),
+    @Index(name = "idx_logs_is_public", columnList = "is_public"),
+    @Index(name = "idx_logs_created_at", columnList = "created_at"),
+    @Index(name = "idx_logs_deactivated_at", columnList = "deactivated_at") })
 public class Log extends BaseTimeEntity {
 
   @Id
@@ -72,11 +74,10 @@ public class Log extends BaseTimeEntity {
   @Column(name = "address", length = 500)
   private String address;
 
-  @ElementCollection
-  @CollectionTable(name = "log_media_urls", joinColumns = @JoinColumn(name = "log_id"))
-  @Column(name = "media_url", length = 500)
+  @OneToMany(mappedBy = "log", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("sortIndex ASC")
   @Builder.Default
-  private List<String> mediaUrls = new ArrayList<>();
+  private List<LogMedia> mediaList = new ArrayList<>();
 
   @Column(name = "is_public", nullable = false)
   @ColumnDefault("true")
@@ -123,13 +124,53 @@ public class Log extends BaseTimeEntity {
   }
 
   /**
+   * Adds a media item maintaining bidirectional relationship.
+   */
+  public void addMedia(LogMedia media) {
+    if (media != null && !this.mediaList.contains(media)) {
+      this.mediaList.add(media);
+      media.assignTo(this);
+    }
+  }
+
+  /**
+   * Removes a media item maintaining bidirectional relationship.
+   */
+  public void removeMedia(LogMedia media) {
+    if (media != null && this.mediaList.contains(media)) {
+      this.mediaList.remove(media);
+      media.assignTo(null);
+    }
+  }
+
+  /**
    * 미디어 URL 목록을 업데이트합니다.
    */
   public void updateMediaUrls(List<String> mediaUrls) {
-    this.mediaUrls.clear();
-    if (mediaUrls != null) {
-      this.mediaUrls.addAll(mediaUrls);
+    // Clear existing media with proper relationship cleanup
+    List<LogMedia> currentMedia = new ArrayList<>(this.mediaList);
+    currentMedia.forEach(media -> removeMedia(media));
+    
+    if (mediaUrls == null || mediaUrls.isEmpty()) {
+      return;
     }
+    
+    for (int i = 0; i < mediaUrls.size(); i++) {
+      LogMedia media = LogMedia.builder()
+          .url(mediaUrls.get(i))
+          .sortIndex(i)
+          .build();
+      addMedia(media);
+    }
+  }
+
+  /**
+   * 미디어 URL 목록을 반환합니다. 내부적으로는 연관 엔티티를 URL 리스트로 변환합니다.
+   */
+  public List<String> getMediaUrls() {
+    return this.mediaList.stream()
+        .map(LogMedia::getUrl)
+        .collect(toList());
   }
 
   /**
