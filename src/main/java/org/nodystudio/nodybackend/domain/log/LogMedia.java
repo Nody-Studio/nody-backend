@@ -48,10 +48,22 @@ public class LogMedia extends BaseTimeEntity {
   private Integer sortIndex = 0;
 
   /**
-   * Sets parent log and returns this for chaining.
+   * Sets parent log and maintains bidirectional relationship consistency.
    */
   public LogMedia assignTo(Log log) {
+    // Remove from current log's collection if exists
+    if (this.log != null) {
+      this.log.getMediaList().remove(this);
+    }
+    
+    // Set new log reference
     this.log = log;
+    
+    // Add to new log's collection if not already present
+    if (log != null && !log.getMediaList().contains(this)) {
+      log.getMediaList().add(this);
+    }
+    
     return this;
   }
 
