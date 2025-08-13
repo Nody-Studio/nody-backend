@@ -1,9 +1,7 @@
 package org.nodystudio.nodybackend.domain.log;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +11,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -37,12 +36,11 @@ import org.nodystudio.nodybackend.domain.user.User;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "logs",
-    indexes = {@Index(name = "idx_logs_user_id", columnList = "user_id"),
-        @Index(name = "idx_logs_location", columnList = "latitude, longitude"),
-        @Index(name = "idx_logs_is_public", columnList = "is_public"),
-        @Index(name = "idx_logs_created_at", columnList = "created_at"),
-        @Index(name = "idx_logs_deactivated_at", columnList = "deactivated_at")})
+@Table(name = "logs", indexes = { @Index(name = "idx_logs_user_id", columnList = "user_id"),
+    @Index(name = "idx_logs_location", columnList = "latitude, longitude"),
+    @Index(name = "idx_logs_is_public", columnList = "is_public"),
+    @Index(name = "idx_logs_created_at", columnList = "created_at"),
+    @Index(name = "idx_logs_deactivated_at", columnList = "deactivated_at") })
 public class Log extends BaseTimeEntity {
 
   @Id
@@ -72,11 +70,10 @@ public class Log extends BaseTimeEntity {
   @Column(name = "address", length = 500)
   private String address;
 
-  @ElementCollection
-  @CollectionTable(name = "log_media_urls", joinColumns = @JoinColumn(name = "log_id"))
-  @Column(name = "media_url", length = 500)
+  @OneToMany(mappedBy = "log", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("sortIndex ASC")
   @Builder.Default
-  private List<String> mediaUrls = new ArrayList<>();
+  private List<LogMedia> mediaList = new ArrayList<>();
 
   @Column(name = "is_public", nullable = false)
   @ColumnDefault("true")
@@ -126,10 +123,30 @@ public class Log extends BaseTimeEntity {
    * 미디어 URL 목록을 업데이트합니다.
    */
   public void updateMediaUrls(List<String> mediaUrls) {
-    this.mediaUrls.clear();
-    if (mediaUrls != null) {
-      this.mediaUrls.addAll(mediaUrls);
+    // 모두 비우고 재구성 (비즈니스적으로 개별 업데이트가 필요한 경우에만 세밀화)
+    this.mediaList.clear();
+    if (mediaUrls == null || mediaUrls.isEmpty()) {
+      return;
     }
+    for (int i = 0; i < mediaUrls.size(); i++) {
+      LogMedia media = LogMedia.builder()
+          .url(mediaUrls.get(i))
+          .sortIndex(i)
+          .build()
+          .assignTo(this);
+      this.mediaList.add(media);
+    }
+  }
+
+  /**
+   * 미디어 URL 목록을 반환합니다. 내부적으로는 연관 엔티티를 URL 리스트로 변환합니다.
+   */
+  public List<String> getMediaUrls() {
+    List<String> urls = new ArrayList<>();
+    for (LogMedia media : this.mediaList) {
+      urls.add(media.getUrl());
+    }
+    return urls;
   }
 
   /**
