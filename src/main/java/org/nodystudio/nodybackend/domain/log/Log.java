@@ -124,21 +124,43 @@ public class Log extends BaseTimeEntity {
   }
 
   /**
+   * Adds a media item maintaining bidirectional relationship.
+   */
+  public void addMedia(LogMedia media) {
+    if (media != null && !this.mediaList.contains(media)) {
+      this.mediaList.add(media);
+      media.assignTo(this);
+    }
+  }
+
+  /**
+   * Removes a media item maintaining bidirectional relationship.
+   */
+  public void removeMedia(LogMedia media) {
+    if (media != null && this.mediaList.contains(media)) {
+      this.mediaList.remove(media);
+      media.assignTo(null);
+    }
+  }
+
+  /**
    * 미디어 URL 목록을 업데이트합니다.
    */
   public void updateMediaUrls(List<String> mediaUrls) {
-    // 모두 비우고 재구성 (비즈니스적으로 개별 업데이트가 필요한 경우에만 세밀화)
-    this.mediaList.clear();
+    // Clear existing media with proper relationship cleanup
+    List<LogMedia> currentMedia = new ArrayList<>(this.mediaList);
+    currentMedia.forEach(media -> removeMedia(media));
+    
     if (mediaUrls == null || mediaUrls.isEmpty()) {
       return;
     }
+    
     for (int i = 0; i < mediaUrls.size(); i++) {
       LogMedia media = LogMedia.builder()
           .url(mediaUrls.get(i))
           .sortIndex(i)
-          .build()
-          .assignTo(this);
-      this.mediaList.add(media);
+          .build();
+      addMedia(media);
     }
   }
 
